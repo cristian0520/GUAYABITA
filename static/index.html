@@ -1,25 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Guayabita - Casino VIP</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La Guayabita</title>
+  <meta name="description" content="La Guayabita: el juego colombiano de dado y apuestas, en línea.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="casino-table-container">
-        <!-- HEADER DE LUJO -->
-        <header class="casino-header">
-            <h1>🎲 LA GUAYABITA VIP 🎲</h1>
-            <p>Mesa Oficial • Apuestas en Pesos Colombianos ($COP)</p>
-        </header>
-
-        <!-- CONTENEDOR PRINCIPAL DEL JUEGO -->
-        <main class="game-felt-board" id="app">
-            <!-- SE CARGARÁ DINÁMICAMENTE DESDE EL JS -->
-        </main>
-    </div>
-
-    <script src="/static/app.js"></script>
+  <div class="wrap" id="app" aria-live="polite">Cargando…</div>
+  <div class="toast" id="toast" role="alert" hidden></div>
+  <script src="/static/app.js"></script>
 </body>
 </html>
