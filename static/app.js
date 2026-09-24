@@ -8,6 +8,8 @@
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  const COP_PER_CHIP = 1000;
+  const cop = (chips) => new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(Number(chips || 0) * COP_PER_CHIP);
   const app = $("#app");
 
   const store = {
@@ -25,6 +27,7 @@
   let lastPot = null;
   let pollTimer = null;
   let toastTimer = null;
+  let wallet = Number(localStorage.getItem("guayabita.wallet") || 100000);
 
   function toast(msg) {
     const t = $("#toast");
@@ -60,16 +63,23 @@
   // ------------------------------------------------------------------ dados
   const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
-  function dieHTML(id, value, caption) {
+  function faceHTML(value) {
     const pips = PIPS[value] || [];
-    const dots = Array.from({ length: 9 }, (_, i) => `<i class="${pips.includes(i) ? "on" : ""}"></i>`).join("");
+    return `<div class="cube-face"><span class="face-pips">${Array.from({ length: 9 }, (_, i) => `<i class="${pips.includes(i) ? "on" : ""}"></i>`).join("")}</span></div>`;
+  }
+
+  function dieHTML(id, value, caption) {
     const label = value ? `Dado en ${value}` : "Dado sin lanzar";
-    return `<div class="die-wrap"><div class="die ${value ? "" : "blank"}" id="${id}" role="img" aria-label="${label}">${dots}</div><span class="cap">${caption}</span></div>`;
+    return `<div class="die-wrap"><div class="die-stage"><div class="die ${value ? "" : "blank"}" id="${id}" data-value="${value || 0}" role="img" aria-label="${label}">${[1, 2, 3, 4, 5, 6].map(faceHTML).join("")}</div></div><span class="cap">${caption}</span></div>`;
   }
 
   function setDie(el, value) {
-    const pips = PIPS[value] || [];
-    [...el.children].forEach((dot, i) => dot.classList.toggle("on", pips.includes(i)));
+    el.dataset.value = value || 0;
+    el.setAttribute("aria-label", value ? `Dado en ${value}` : "Dado sin lanzar");
+    [...el.children].forEach((face, faceIndex) => {
+      const pips = PIPS[((value + faceIndex) % 6) + 1] || [];
+      [...face.querySelectorAll("i")].forEach((dot, i) => dot.classList.toggle("on", pips.includes(i)));
+    });
   }
 
   function startRolling(el) {
@@ -146,10 +156,10 @@
             <div class="field"><label for="on-name">Tu nombre</label>
               <input id="on-name" name="host" type="text" maxlength="20" required autocomplete="nickname"></div>
             <div class="row">
-              <div class="field"><label for="on-ante">Apuesta inicial</label>
-                <input id="on-ante" name="ante" type="number" min="1" value="5" required></div>
-              <div class="field"><label for="on-chips">Fichas por jugador</label>
-                <input id="on-chips" name="chips" type="number" min="2" value="50" required></div>
+              <div class="field"><label for="on-ante">Apuesta inicial (COP)</label>
+                <input id="on-ante" name="ante" type="number" min="1000" step="1000" value="5000" required></div>
+              <div class="field"><label for="on-chips">Saldo por jugador (COP)</label>
+                <input id="on-chips" name="chips" type="number" min="2000" step="1000" value="50000" required></div>
             </div>
             <button class="btn big" type="submit">Crear mesa</button>
             <p class="hint" style="margin-top:12px">Recibirás un código para que tus amigos entren desde su celular.</p>
@@ -164,10 +174,10 @@
               <button class="btn ghost small" type="button" data-action="add-name" style="justify-self:start">Agregar jugador</button>
             </div>
             <div class="row">
-              <div class="field"><label for="lo-ante">Apuesta inicial</label>
-                <input id="lo-ante" name="ante" type="number" min="1" value="5" required></div>
-              <div class="field"><label for="lo-chips">Fichas por jugador</label>
-                <input id="lo-chips" name="chips" type="number" min="2" value="50" required></div>
+              <div class="field"><label for="lo-ante">Apuesta inicial (COP)</label>
+                <input id="lo-ante" name="ante" type="number" min="1000" step="1000" value="5000" required></div>
+              <div class="field"><label for="lo-chips">Saldo por jugador (COP)</label>
+                <input id="lo-chips" name="chips" type="number" min="2000" step="1000" value="50000" required></div>
             </div>
             <button class="btn big" type="submit">Empezar partida</button>
             <p class="hint" style="margin-top:12px">Todos juegan en esta pantalla y se pasan el turno.</p>
@@ -226,7 +236,7 @@
         <div class="bigcode">${esc(s.code)}</div>
         <button class="btn ghost small" data-action="copy-link">Copiar enlace</button>
         <ul class="plist" aria-label="Jugadores en la mesa">${list}</ul>
-        <p class="hint">Apuesta inicial de ${s.ante} fichas. Cada jugador empieza con ${s.initial_chips - s.ante}.</p>
+        <p class="hint">Apuesta inicial de ${cop(s.ante)}. Cada jugador empieza con ${cop(s.initial_chips - s.ante)}.</p>
         ${isHost
           ? `<button class="btn big" data-action="start" data-primary ${s.players.length < 2 ? "disabled" : ""}>Empezar partida</button>
              ${s.players.length < 2 ? `<p class="hint">Se necesitan al menos 2 jugadores.</p>` : ""}`
@@ -269,7 +279,7 @@
     const seats = s.players.map((p) => {
       const cls = ["seat", p.seat === s.current_seat && !finished ? "current" : "", p.out ? "out" : "", finished && p.seat === s.winner_seat ? "winner" : ""].join(" ");
       const you = online && s.you && s.you.seat === p.seat ? `<span class="tu">(tú)</span>` : "";
-      return `<li class="${cls}" ${p.seat === s.current_seat && !finished ? 'aria-current="true"' : ""}><span class="n">${esc(p.name)}</span>${you}<span class="c">${p.chips}</span></li>`;
+      return `<li class="${cls}" ${p.seat === s.current_seat && !finished ? 'aria-current="true"' : ""}><span class="n">${esc(p.name)}</span>${you}<span class="c">${cop(p.chips)}</span></li>`;
     }).join("");
 
     const log = s.moves.length
@@ -279,10 +289,11 @@
     app.innerHTML = `
       ${topbar()}
       <div class="layout">
-        <section class="panel">
+        <section class="panel game-panel">
           <ul class="seats" aria-label="Jugadores y fichas">${seats}</ul>
+          <div class="wallet-bar"><span><small>Tu billetera</small><strong>${cop(wallet / COP_PER_CHIP)}</strong></span><button class="btn ghost small" data-action="recharge">+ Recargar</button></div>
           <div class="felt"><div class="felt-inner">
-            <div class="coin ${bump ? "bump" : ""}" role="img" aria-label="Pozo de ${s.pot} fichas"><span class="num">${s.pot}</span><span class="lbl">Pozo</span></div>
+            <div class="coin ${bump ? "bump" : ""}" role="img" aria-label="Pozo de ${cop(s.pot)}"><span class="num">${cop(s.pot)}</span><span class="lbl">Pozo</span></div>
             <div class="dice">${dieHTML("die-a", a, "Primer tiro")}${dieHTML("die-b", b, "Segundo tiro")}</div>
             <p class="banner" id="banner">${esc(banner)}</p>
             ${finished ? finishedHTML(s) : controlsHTML(s, cur, mine, online)}
@@ -313,13 +324,13 @@
         <div class="quick">
           <button type="button" data-action="bet-set" data-v="1">1</button>
           <button type="button" data-action="bet-set" data-v="half">Mitad</button>
-          <button type="button" data-action="bet-set" data-v="max">Todo (${max})</button>
+          <button type="button" data-action="bet-set" data-v="max">Todo (${cop(max)})</button>
         </div>
         <div class="actions">
-          <button class="btn big" id="bet-go" data-action="bet-go" data-primary>Apostar ${betAmount} y lanzar</button>
+          <button class="btn big" id="bet-go" data-action="bet-go" data-primary>Apostar ${cop(betAmount)} y lanzar</button>
           <button class="btn ghost" data-action="pass">Pasar</button>
         </div>
-        <p class="hint">Máximo ${max}: lo que hay en el pozo o tus fichas, lo que sea menor.</p>
+        <p class="hint">Máximo ${cop(max)}: lo que hay en el pozo o tus fichas, lo que sea menor.</p>
       </div></div>`;
   }
 
@@ -328,7 +339,7 @@
     const why = s.finish_reason === "pozo_vacio" ? "El pozo quedó vacío." : "Solo quedó un jugador con fichas.";
     return `<div class="winnerbox">
       <p class="big">Ganó ${esc(w ? w.name : "nadie")}</p>
-      <p class="muted" style="margin:0">${why} Termina con ${w ? w.chips : 0} fichas.</p>
+      <p class="muted" style="margin:0">${why} Termina con ${w ? cop(w.chips) : cop(0)}.</p>
       <div class="actions" style="margin-top:12px">
         ${s.mode === "local" ? `<button class="btn" data-action="rematch" data-primary>Revancha</button>` : ""}
         <button class="btn ghost" data-action="leave">Volver al inicio</button>
@@ -340,7 +351,7 @@
     const input = $("#bet-input");
     const go = $("#bet-go");
     if (input) input.value = betAmount;
-    if (go) go.textContent = `Apostar ${betAmount} y lanzar`;
+    if (go) go.textContent = `Apostar ${cop(betAmount)} y lanzar`;
   }
 
   async function act(dieId, call) {
@@ -411,6 +422,14 @@
           try { await navigator.clipboard.writeText(link); toast("Enlace copiado."); } catch { window.prompt("Copia este enlace:", link); }
           break;
         }
+        case "recharge": {
+          const amount = Number(window.prompt("¿Cuánto deseas recargar?", "50000"));
+          if (!Number.isFinite(amount) || amount < 1000) return toast("La recarga mínima es de $1.000 COP.");
+          wallet += Math.floor(amount / 1000) * 1000;
+          localStorage.setItem("guayabita.wallet", String(wallet));
+          toast(`Billetera recargada con ${cop(Math.floor(amount / 1000))}.`);
+          return render();
+        }
         case "leave":
           if (state && state.status !== "finished" && !confirm("¿Salir de la mesa? Podrás volver con el código.")) return;
           return leave();
@@ -433,7 +452,7 @@
       const v = parseInt(e.target.value, 10);
       betAmount = clamp(Number.isFinite(v) ? v : 1, 1, max);
       const go = $("#bet-go");
-      if (go) go.textContent = `Apostar ${betAmount} y lanzar`;
+      if (go) go.textContent = `Apostar ${cop(betAmount)} y lanzar`;
     }
     if (e.target.id === "jn-code") e.target.value = e.target.value.toUpperCase();
   });
@@ -447,14 +466,14 @@
       if (f.id === "form-online") {
         const d = await api("/api/games", {
           method: "POST",
-          body: { mode: "online", host_name: f.elements.host.value, ante: +f.elements.ante.value, initial_chips: +f.elements.chips.value },
+          body: { mode: "online", host_name: f.elements.host.value, ante: Math.floor(+f.elements.ante.value / COP_PER_CHIP), initial_chips: Math.floor(+f.elements.chips.value / COP_PER_CHIP) },
         });
         await enterGame(d.code, d.token);
       } else if (f.id === "form-local") {
         const names = [...f.querySelectorAll("input[name=n]")].map((i) => i.value.trim()).filter(Boolean);
         const d = await api("/api/games", {
           method: "POST",
-          body: { mode: "local", names, ante: +f.elements.ante.value, initial_chips: +f.elements.chips.value },
+          body: { mode: "local", names, ante: Math.floor(+f.elements.ante.value / COP_PER_CHIP), initial_chips: Math.floor(+f.elements.chips.value / COP_PER_CHIP) },
         });
         await enterGame(d.code, d.token);
       } else if (f.id === "form-join") {

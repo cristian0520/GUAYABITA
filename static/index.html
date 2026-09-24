@@ -3,15 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>La Guayabita</title>
-  <meta name="description" content="La Guayabita: el juego colombiano de dado y apuestas, en línea.">
+  <title>La Guayabita | Mesa de juego online</title>
+  <meta name="description" content="La Guayabita: mesa colombiana de dados, apuestas en pesos y partidas con amigos.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
-  <div class="wrap" id="app" aria-live="polite">Cargando…</div>
+<body class="game-app">
+  <div class="wrap" id="app" aria-live="polite">
+    <main class="home" aria-busy="true">
+      <header><p class="eyebrow">Mesa online colombiana</p><h1 class="wordmark">La Guayabita</h1><p class="tag">Dados, estrategia y partidas con amigos.</p></header>
+      <section class="panel loading-panel"><span class="loading-dot"></span><span>Preparando la mesa...</span></section>
+    </main>
+  </div>
   <div class="toast" id="toast" role="alert" hidden></div>
   <script src="/static/app.js"></script>
 </body>
