@@ -8,67 +8,15 @@
 </head>
 <body>
     <div class="casino-background">
-        <div class="table-felt">
+        <div class="table-felt" id="mainContainer">
             <header>
                 <h1>La Guayabita 🎲</h1>
-                <p>Estilo Casino • Apuestas en Pesos Colombianos ($COP)</p>
+                <p>Casino en Vivo • Apuestas en Pesos Colombianos ($COP)</p>
             </header>
 
-            <main id="app">
-                <!-- Sección de Creación de Mesa -->
-                <section class="card-box">
-                    <h2>Crear Nueva Sala de Juego</h2>
-                    <div class="tabs">
-                        <button class="tab-btn active" onclick="setMode('online')">Cada uno en su celular</button>
-                        <button class="tab-btn" onclick="setMode('local')">Un solo dispositivo</button>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Tu Nombre de Jugador:</label>
-                        <input type="text" id="hostName" placeholder="Ej. Cristian" maxlength="20">
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Apuesta Inicial (Mín. $300 COP):</label>
-                            <input type="number" id="anteInput" value="300" min="300" step="100">
-                        </div>
-                        <div class="form-group">
-                            <label>Saldo / Recarga Inicial ($COP):</label>
-                            <input type="number" id="chipsInput" value="15000" min="300" step="1000">
-                        </div>
-                    </div>
-
-                    <button class="btn-primary" onclick="createGame()">Crear Mesa Privada</button>
-                </section>
-
-                <!-- Sección para Unirse con Código -->
-                <section class="card-box">
-                    <h2>¿Ya tienes un código de mesa?</h2>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Código de la Mesa (5 letras):</label>
-                            <input type="text" id="joinCode" placeholder="Ej. A B C D E" style="text-transform: uppercase;">
-                        </div>
-                        <div class="form-group">
-                            <label>Tu Nombre:</label>
-                            <input type="text" id="joinName" placeholder="Ej. Amigo" maxlength="20">
-                        </div>
-                    </div>
-                    <button class="btn-secondary" onclick="joinGame()">Entrar a la Sala</button>
-                </section>
-            </main>
-
-            <!-- Animación de Dado 3D flotante de prueba -->
-            <div class="dice-container-3d">
-                <div class="dice-3d" id="previewDice">
-                    <div class="face front">🎲</div>
-                    <div class="face back">♠️</div>
-                    <div class="face right">♣️</div>
-                    <div class="face left">♥️</div>
-                    <div class="face top">♦️</div>
-                    <div class="face bottom">💰</div>
-                </div>
+            <!-- CONTENEDOR DINÁMICO (LOBBY O JUEGO) -->
+            <div id="gameApp">
+                <!-- Se carga mediante JavaScript (app.js) -->
             </div>
         </div>
     </div>
