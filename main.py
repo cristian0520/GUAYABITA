@@ -43,7 +43,8 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="La Guayabita", lifespan=lifespan)
 
 
-# ---------------------------------------------------------------- errores
+# ----------------------------------------------------------------
+# Manejo uniforme de errores de negocio.
 @app.exception_handler(GameError)
 async def game_error_handler(_: Request, exc: GameError):
     return JSONResponse({"detail": exc.message}, status_code=exc.status)
@@ -58,7 +59,8 @@ async def db_error_handler(_: Request, exc: DBError):
     )
 
 
-# ---------------------------------------------------------------- modelos
+# ----------------------------------------------------------------
+# Modelos de entrada que validan los datos recibidos por la API.
 class CreateGameBody(BaseModel):
     mode: str = "online"                    # "local" (un dispositivo) | "online"
     host_name: str = ""                     # modo online
@@ -114,7 +116,8 @@ class SeatBody(BaseModel):
     seat: int = Field(..., ge=0, le=7)
 
 
-# ---------------------------------------------------------------- rutas
+# ----------------------------------------------------------------
+# Rutas de autenticación, lobby, chat y acciones de juego.
 @app.get("/health")
 def health():
     db.execute("SELECT 1")  # comprueba que la base de datos responde
@@ -203,7 +206,8 @@ def restart_round(code: str, body: TokenBody):
     return service.restart_round(code, body.token)
 
 
-# ---------------------------------------------------------------- frontend
+# ----------------------------------------------------------------
+# Servido del frontend estático.
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 

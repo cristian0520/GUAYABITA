@@ -26,7 +26,7 @@ class DBError(Exception):
 
 
 # --------------------------------------------------------------------------
-# Esquema
+# Esquema persistente: partidas, jugadores, movimientos, cuentas y chat.
 # --------------------------------------------------------------------------
 SCHEMA: list[str] = [
     """
@@ -115,7 +115,7 @@ SCHEMA: list[str] = [
 
 
 # --------------------------------------------------------------------------
-# Backend Turso (HTTP)
+# Backend Turso (HTTP): producción y datos compartidos entre dispositivos.
 # --------------------------------------------------------------------------
 def _encode_arg(v: Any) -> dict:
     if v is None:
@@ -211,7 +211,7 @@ class _TursoBackend:
 
 
 # --------------------------------------------------------------------------
-# Backend SQLite local (respaldo para pruebas)
+# Backend SQLite local: respaldo para desarrollo sin credenciales de Turso.
 # --------------------------------------------------------------------------
 class _SqliteBackend:
     def __init__(self, path: str) -> None:

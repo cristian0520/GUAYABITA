@@ -41,6 +41,7 @@
   const TURN_SECONDS = 15;
   let turnExpiryRequested = false;
 
+  // Web Audio necesita una interacción del usuario para desbloquearse en el navegador.
   function audio() {
     if (!soundEnabled) return null;
     const AudioCtor = window.AudioContext || window.webkitAudioContext;
@@ -66,6 +67,7 @@
     oscillator.stop(start + duration + 0.02);
   }
 
+  // Ruido corto de rebotes; no es un archivo externo y funciona sin cargar assets.
   function diceSound() {
     const ctx = audio();
     if (!ctx) return;
@@ -228,6 +230,8 @@
     return renderTable();
   }
 
+  // Portada inicial. La espera se controla al final de boot() y debe coincidir
+  // con la duración de .loading-bar i en style.css.
   function renderLoading() {
     app.innerHTML = `
       <main class="loading-cover">
@@ -392,6 +396,7 @@
   }
 
   // ------------------------------------------------------------------ pantalla: mesa
+  // Construye la mesa completa a partir del estado enviado por el servidor.
   function renderTable() {
     const s = state;
     const online = s.mode === "online";
@@ -452,6 +457,8 @@
     const log = s.moves.length
       ? `<ol>${s.moves.map((m) => `<li>${esc(m.message)}<div class="meta">Turno ${m.turn_no}, pozo ${cop(m.pot_after)}</div></li>`).join("")}</ol>`
       : `<p class="empty">Aún no hay jugadas. Aquí quedará el registro de cada turno.</p>`;
+    // Solo el comentario reciente aparece sobre el paño; el historial completo
+    // permanece en el panel lateral y el formulario queda debajo.
     const recentChat = (s.chat || []).filter((m) => {
       const rawDate = m.created_at || "";
       const created = Date.parse(rawDate) || Date.parse(`${rawDate}Z`);
@@ -480,6 +487,7 @@
       </div>`;
   }
 
+  // Controles según la fase: primer lanzamiento o decisión de apuesta.
   function controlsHTML(s, cur, mine, online, mePlayer) {
     if (!cur) return "";
     const timer = `<div class="turn-timer" role="timer"><span>⏱️ Tiempo de turno</span><strong id="turn-countdown">${remainingTurnSeconds()}s</strong></div>`;
@@ -591,7 +599,7 @@
   const doRoll = () => act("#die-a", () => api(`/api/games/${session.code}/roll`, { method: "POST", body: bodyBase() }));
   const doBet = (amount) => act(amount > 0 ? "#die-b" : null, () => api(`/api/games/${session.code}/bet`, { method: "POST", body: { ...bodyBase(), amount } }));
 
-  // ------------------------------------------------------------------ eventos
+  // ------------------------------------------------------------------ eventos: botones, acciones de juego, perfil y navegación.
   document.addEventListener("click", async (e) => {
     const el = e.target.closest("[data-action]");
     if (!el) return;

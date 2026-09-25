@@ -24,6 +24,29 @@ La aplicación incluye registro e inicio de sesión con usuario y contraseña. L
 se almacenan como hashes `scrypt` con salt aleatorio; nunca se guarda la contraseña original.
 Los usuarios reciben una sesión temporal y un perfil inicial con nombre visible, avatar y emblema.
 
+## Mantenimiento rápido
+
+Estos son los puntos que normalmente se cambian al personalizar el juego:
+
+| Necesidad | Archivo y ubicación |
+|---|---|
+| Colores, fuentes y fondo | `static/style.css`, bloque `:root` |
+| Tamaño, color y animación de dados | `static/style.css`, bloque `Dados 3D` |
+| Tiempo visible de la portada | `static/app.js`, `await sleep(5000)` dentro de `boot()` |
+| Duración de la barra de portada | `static/style.css`, `animation: loading-progress 5s` |
+| Tiempo real del turno | `service.py`, `TURN_SECONDS = 15` |
+| Texto y reglas de la portada | `static/app.js`, función `renderLoading()` |
+| Mesa, asientos y fichas del pozo | `static/app.js`, función `renderTable()` y `potHTML()` |
+| Chat y burbuja temporal | `static/app.js`, variable `recentChat`; estilos `.chat` y `.table-bubble` |
+| Avatares disponibles | `static/app.js` y lista `allowed` en `service.py` |
+| Reglas matemáticas del juego | `engine.py` |
+| Rutas HTTP | `main.py` |
+| Tablas y conexión de datos | `db.py` |
+
+Cuando cambies archivos estáticos, actualiza los valores `?v=...` de `static/index.html`
+para evitar que el navegador conserve una versión anterior. Después ejecuta `git diff --check`,
+prueba localmente y publica con `git push`.
+
 ## 1. Crear la base en Turso
 
 ```bash

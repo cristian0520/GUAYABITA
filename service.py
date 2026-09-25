@@ -20,7 +20,8 @@ from db import Database, DBError
 MAX_PLAYERS = 8
 MIN_PLAYERS = 2
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # sin 0/O/1/I para evitar confusiones
-TURN_SECONDS = 15  # sin 0/O/1/I para evitar confusiones
+# El servidor es la autoridad del límite; el frontend solo lo visualiza.
+TURN_SECONDS = 15
 HISTORY_LIMIT = 40
 
 
@@ -121,6 +122,7 @@ class GameService:
         return self._public_user(self._auth_user(token))
 
     def update_profile(self, token: str | None, avatar: str, display_name: str = "") -> dict:
+        """Guarda el avatar y nombre visible de la cuenta autenticada."""
         user = self._auth_user(token)
         allowed = {"🧑", "👩", "🧔", "👨", "👩‍🦱", "🧑‍🎤", "👨‍🦰", "👩‍🦳", "🐯", "🦊", "🐼", "🐸"}
         if avatar not in allowed:
@@ -476,6 +478,7 @@ class GameService:
         return player
 
     def _expire_turn_if_needed(self, game: dict) -> bool:
+        """Pasa el turno cuando el plazo venció, evitando que quede bloqueado."""
         if game["status"] != "playing" or not game["turn_deadline"] or game["turn_deadline"] > time.time():
             return False
         players = self._players(game["code"])

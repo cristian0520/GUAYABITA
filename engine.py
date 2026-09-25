@@ -22,6 +22,7 @@ import secrets
 from dataclasses import dataclass
 
 FACES = 6
+# Resultados especiales del primer lanzamiento.
 LOSE_TURN_PUT = 1   # sale 1 -> pone una ficha
 LOSE_TURN_TAKE = 6  # sale 6 -> saca una ficha
 BET_FACES = (2, 3, 4, 5)
@@ -41,6 +42,7 @@ class FirstRollOutcome:
 
 
 def resolve_first_roll(roll: int, pot: int, chips: int) -> FirstRollOutcome:
+    """Convierte el primer resultado en una acción y cambios de saldo."""
     if roll == LOSE_TURN_PUT:
         amount = min(1, chips)
         return FirstRollOutcome("pone", -amount, +amount, True)
@@ -72,6 +74,7 @@ class BetOutcome:
 
 
 def resolve_bet(first_roll: int, second_roll: int, bet: int) -> BetOutcome:
+    """Resuelve la apuesta: el segundo número debe ser estrictamente mayor."""
     won = second_roll > first_roll  # estrictamente mayor
     if won:
         return BetOutcome(True, +bet, -bet)
