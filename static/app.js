@@ -77,7 +77,7 @@
     el.dataset.value = value || 0;
     el.setAttribute("aria-label", value ? `Dado en ${value}` : "Dado sin lanzar");
     [...el.children].forEach((face, faceIndex) => {
-      const pips = PIPS[((value + faceIndex) % 6) + 1] || [];
+      const pips = PIPS[((value + faceIndex - 1) % 6) + 1] || [];
       [...face.querySelectorAll("i")].forEach((dot, i) => dot.classList.toggle("on", pips.includes(i)));
     });
   }
@@ -316,9 +316,9 @@
               <div class="coin ${bump ? "bump" : ""}" role="img" aria-label="Pozo de ${cop(s.pot)}"><span class="num">${cop(s.pot)}</span><span class="lbl">Pozo</span></div>
               <div class="dice">${dieHTML("die-a", a, "Primer tiro")}${dieHTML("die-b", b, "Segundo tiro")}</div>
               <p class="banner" id="banner">${esc(banner)}</p>
-              ${finished ? finishedHTML(s) : controlsHTML(s, cur, mine, online, mePlayer)}
             </div></div>
           </div>
+          <div class="table-controls">${finished ? finishedHTML(s) : controlsHTML(s, cur, mine, online, mePlayer)}</div>
         </section>
         <aside class="log" aria-label="Historial de jugadas"><h3>Jugadas recientes</h3>${log}</aside>
       </div>`;
@@ -371,6 +371,19 @@
         <button class="btn" data-action="restart-round" data-primary>Volver a apostar</button>
         <button class="btn ghost" data-action="leave">Volver al inicio</button>
       </div></div>`;
+  }
+
+  function walletCost(chips) {
+    return Math.max(0, Number(chips || 0) * COP_PER_CHIP);
+  }
+
+  function canPayWallet(chips) {
+    return wallet >= walletCost(chips);
+  }
+
+  function debitWallet(chips) {
+    wallet -= walletCost(chips);
+    localStorage.setItem("guayabita.wallet", String(wallet));
   }
 
   // ------------------------------------------------------------------ acciones de juego
@@ -473,10 +486,13 @@
           if (state && state.status !== "finished" && !confirm("¿Salir de la mesa? Podrás volver con el código.")) return;
           return leave();
         case "restart-round": {
+          const entryChips = state.initial_chips - state.ante;
+          if (!canPayWallet(entryChips)) return toast(`Necesitas ${cop(entryChips)} disponibles para volver a apostar.`);
           const d = await api(`/api/games/${session.code}/restart`, {
             method: "POST",
             body: { token: session.token },
           });
+          debitWallet(entryChips);
           state = d;
           toast("Nueva ronda iniciada. ¡Vuelvan a apostar!");
           return render();
@@ -505,17 +521,23 @@
     if (btn) btn.disabled = true;
     try {
       if (f.id === "form-online") {
+        const initialChips = Math.floor(+f.elements.chips.value / COP_PER_CHIP);
+        if (!canPayWallet(initialChips)) throw new Error(`Necesitas ${cop(initialChips)} disponibles para crear la mesa.`);
         const d = await api("/api/games", {
           method: "POST",
-          body: { mode: "online", host_name: f.elements.host.value, ante: Math.floor(+f.elements.ante.value / COP_PER_CHIP), initial_chips: Math.floor(+f.elements.chips.value / COP_PER_CHIP) },
+          body: { mode: "online", host_name: f.elements.host.value, ante: Math.floor(+f.elements.ante.value / COP_PER_CHIP), initial_chips: initialChips },
         });
+        debitWallet(initialChips);
         await enterGame(d.code, d.token);
       } else if (f.id === "form-local") {
         const names = [...f.querySelectorAll("input[name=n]")].map((i) => i.value.trim()).filter(Boolean);
+        const initialChips = Math.floor(+f.elements.chips.value / COP_PER_CHIP);
+        if (!canPayWallet(initialChips * names.length)) throw new Error(`Necesitas ${cop(initialChips * names.length)} para sentar a todos los jugadores.`);
         const d = await api("/api/games", {
           method: "POST",
-          body: { mode: "local", names, ante: Math.floor(+f.elements.ante.value / COP_PER_CHIP), initial_chips: Math.floor(+f.elements.chips.value / COP_PER_CHIP) },
+          body: { mode: "local", names, ante: Math.floor(+f.elements.ante.value / COP_PER_CHIP), initial_chips: initialChips },
         });
+        debitWallet(initialChips * names.length);
         await enterGame(d.code, d.token);
       } else if (f.id === "form-join") {
         const code = f.elements.code.value.trim().toUpperCase();
@@ -525,7 +547,10 @@
         } else {
           const nm = f.elements.name.value.trim();
           if (!nm) throw new Error("Escribe tu nombre para entrar.");
+          const initialChips = info.initial_chips - info.ante;
+          if (!canPayWallet(initialChips)) throw new Error(`Necesitas ${cop(initialChips)} disponibles para entrar a la mesa.`);
           const d = await api(`/api/games/${info.code}/join`, { method: "POST", body: { name: nm } });
+          debitWallet(initialChips);
           await enterGame(d.code, d.token);
         }
       }

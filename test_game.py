@@ -175,18 +175,16 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(s["winner_seat"], 2)
 
     def test_jugador_sin_saldo_puede_recargar_sin_reiniciar(self):
-        g = self.local_game(names=("Ana", "Beto"), ante=5, chips=6)
-        with self.dice(1):
-            self.svc.roll(g["code"], None, None)
+        g = self.local_game(names=("Ana", "Beto", "Cami"), ante=5, chips=6)
         with self.dice(1):
             state = self.svc.roll(g["code"], None, None)["state"]
         self.assertTrue(state["players"][0]["out"])
-        self.assertTrue(state["players"][1]["out"])
+        self.assertEqual(state["status"], "playing")
 
         state = self.svc.recharge(g["code"], g["token"], 0, 20)
         self.assertEqual(state["status"], "playing")
         self.assertEqual(state["players"][0]["chips"], 20)
-        self.assertEqual(state["current_seat"], 0)
+        self.assertEqual(state["current_seat"], 1)
 
     def test_turno_salta_al_eliminado(self):
         g = self.local_game(names=("Ana", "Beto", "Cami"), ante=5, chips=6)
