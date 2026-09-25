@@ -28,6 +28,49 @@
   let pollTimer = null;
   let toastTimer = null;
   let wallet = Number(localStorage.getItem("guayabita.wallet") || 100000);
+  let soundEnabled = localStorage.getItem("guayabita.sound") !== "off";
+  let audioContext = null;
+
+  function audio() {
+    if (!soundEnabled) return null;
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return null;
+    if (!audioContext) audioContext = new AudioCtor();
+    if (audioContext.state === "suspended") audioContext.resume();
+    return audioContext;
+  }
+
+  function tone(frequency, duration, type = "sine", volume = 0.045, delay = 0) {
+    const ctx = audio();
+    if (!ctx) return;
+    const start = ctx.currentTime + delay;
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(volume, start + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    oscillator.connect(gain).connect(ctx.destination);
+    oscillator.start(start);
+    oscillator.stop(start + duration + 0.02);
+  }
+
+  function diceSound() {
+    tone(150, 0.08, "triangle", 0.035);
+    tone(220, 0.08, "triangle", 0.03, 0.09);
+    tone(310, 0.12, "triangle", 0.025, 0.18);
+  }
+
+  function landingSound() {
+    tone(110, 0.16, "square", 0.04);
+    tone(185, 0.2, "sine", 0.035, 0.05);
+  }
+
+  function chipsSound() {
+    tone(660, 0.07, "sine", 0.035);
+    tone(880, 0.11, "sine", 0.025, 0.08);
+  }
 
   function toast(msg) {
     const t = $("#toast");
@@ -225,6 +268,7 @@
       <h1 class="wordmark">La Guayabita</h1>
       <div class="right">
         ${showCode && state ? `<span class="code" title="Código de la mesa">${esc(state.code)}</span>` : ""}
+        <button class="btn ghost small sound-toggle" data-action="sound-toggle" aria-pressed="${soundEnabled}">${soundEnabled ? "🔊 Sonido" : "🔇 Silencio"}</button>
         <button class="btn ghost small" data-action="leave">Salir</button>
       </div>
     </div>`;
@@ -285,6 +329,7 @@
 
     const bump = lastPot !== null && lastPot !== s.pot;
     lastPot = s.pot;
+    if (bump) chipsSound();
 
     const avatars = ["🧑", "👩", "🧔", "👨", "👩‍🦱", "🧑‍🎤", "👨‍🦰", "👩‍🦳"];
     const seats = Array.from({ length: 8 }, (_, seat) => {
@@ -396,9 +441,11 @@
     busy = true;
     $$buttons(true);
     const stop = startRolling(dieId ? $(dieId) : null);
+    diceSound();
     try {
       const [res] = await Promise.all([call(), sleep(reduceMotion ? 0 : 650)]);
       state = res.state;
+      landingSound();
     } catch (e) {
       toast(e.message);
       if (e.status === 409 || e.status === 403) { try { state = await api(`/api/games/${session.code}${session.token ? `?token=${encodeURIComponent(session.token)}` : ""}`); } catch { /* se reintenta en el sondeo */ } }
@@ -432,6 +479,12 @@
           $("#form-local").hidden = tab !== "local";
           break;
         }
+        case "sound-toggle":
+          soundEnabled = !soundEnabled;
+          localStorage.setItem("guayabita.sound", soundEnabled ? "on" : "off");
+          if (soundEnabled) { tone(660, 0.08); tone(880, 0.12, "sine", 0.03, 0.08); }
+          render();
+          break;
         case "add-name": {
           const box = $("#names");
           if (box.children.length >= 8) return toast("Máximo 8 jugadores.");
