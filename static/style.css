@@ -316,18 +316,18 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 .die-result { min-width: 74px; min-height: 45px; display: grid; justify-items: center; align-content: center; gap: 2px; border-radius: 9px; background: rgba(246, 211, 101, 0.95); color: #3b2608; line-height: 1; box-shadow: 0 3px 0 #9c6e1c; }
 .die-result-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; }
 .die-result strong { font-size: 1.45rem; }
-.die-stage { width: 90px; height: 90px; perspective: 600px; }
-.die { width: 80px; height: 80px; position: relative; transform-style: preserve-3d; transform: rotateX(-16deg) rotateY(18deg); margin: 5px; }
-.cube-face { position: absolute; inset: 0; display: grid; place-items: center; padding: 12px; border: 2px solid #d6c8ad; border-radius: 14px; background: linear-gradient(145deg, #fffdf4, #ded2b9); box-shadow: inset 0 0 0 2px rgba(255,255,255,.4); backface-visibility: hidden; }
-.cube-face:nth-child(1) { transform: translateZ(40px); }
-.cube-face:nth-child(2) { transform: rotateY(180deg) translateZ(40px); }
-.cube-face:nth-child(3) { transform: rotateY(90deg) translateZ(40px); }
-.cube-face:nth-child(4) { transform: rotateY(-90deg) translateZ(40px); }
-.cube-face:nth-child(5) { transform: rotateX(90deg) translateZ(40px); }
-.cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(40px); }
+.die-stage { width: 72px; height: 72px; perspective: 560px; }
+.die { width: 60px; height: 60px; position: relative; transform-style: preserve-3d; transform: rotateX(-16deg) rotateY(18deg); margin: 6px; }
+.cube-face { position: absolute; inset: 0; display: grid; place-items: center; padding: 9px; border: 2px solid #39245c; border-radius: 11px; background: linear-gradient(145deg, #26202f, #08070d 72%); box-shadow: inset 0 0 0 2px rgba(168,85,247,.16), inset 0 -7px 12px rgba(0,0,0,.55); backface-visibility: hidden; }
+.cube-face:nth-child(1) { transform: translateZ(30px); }
+.cube-face:nth-child(2) { transform: rotateY(180deg) translateZ(30px); }
+.cube-face:nth-child(3) { transform: rotateY(90deg) translateZ(30px); }
+.cube-face:nth-child(4) { transform: rotateY(-90deg) translateZ(30px); }
+.cube-face:nth-child(5) { transform: rotateX(90deg) translateZ(30px); }
+.cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(30px); }
 .face-pips { display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); width: 100%; height: 100%; gap: 2px; }
-.face-pips i { display: block; border-radius: 50%; place-self: center; width: 14px; height: 14px; background: transparent; }
-.face-pips i.on { background: #b23c4c; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25); }
+.face-pips i { display: block; border-radius: 50%; place-self: center; width: 10px; height: 10px; background: transparent; }
+.face-pips i.on { background: #b968ff; box-shadow: inset 0 2px 2px rgba(255,255,255,.35), 0 0 7px rgba(168,85,247,.9); }
 .die.blank { opacity: 0.58; }
 .die.rolling { animation: realistic-roll .72s cubic-bezier(.35,.05,.55,.95) infinite; filter: drop-shadow(0 18px 12px rgba(0, 0, 0, 0.5)); }
 .die.landing { animation: land 0.42s cubic-bezier(.2, .9, .3, 1) both; }
@@ -424,16 +424,16 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
   .topbar .wordmark { font-size: 1.45rem; }
   .row { grid-template-columns: 1fr; }
   .dice { gap: 18px; }
-  .die-stage { width: 76px; height: 76px; }
-  .die { width: 66px; height: 66px; margin: 5px; }
+  .die-stage { width: 70px; height: 70px; }
+  .die { width: 60px; height: 60px; margin: 5px; }
   .cube-face { padding: 9px; }
-  .cube-face:nth-child(1) { transform: translateZ(33px); }
-  .cube-face:nth-child(2) { transform: rotateY(180deg) translateZ(33px); }
-  .cube-face:nth-child(3) { transform: rotateY(90deg) translateZ(33px); }
-  .cube-face:nth-child(4) { transform: rotateY(-90deg) translateZ(33px); }
-  .cube-face:nth-child(5) { transform: rotateX(90deg) translateZ(33px); }
-  .cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(33px); }
-  .face-pips i { width: 11px; height: 11px; }
+  .cube-face:nth-child(1) { transform: translateZ(30px); }
+  .cube-face:nth-child(2) { transform: rotateY(180deg) translateZ(30px); }
+  .cube-face:nth-child(3) { transform: rotateY(90deg) translateZ(30px); }
+  .cube-face:nth-child(4) { transform: rotateY(-90deg) translateZ(30px); }
+  .cube-face:nth-child(5) { transform: rotateX(90deg) translateZ(30px); }
+  .cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(30px); }
+  .face-pips i { width: 10px; height: 10px; }
   .panel { padding: 16px; border-width: 1px; }
   .layout { gap: 12px; }
   .game-panel { padding: 10px; }
@@ -458,15 +458,15 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
   .pot-stack { transform: scale(.82); transform-origin: center bottom; margin-bottom: -8px; }
   .pot-value { font-size: 1.05rem; }
   .dice { gap: 10px; min-height: 112px; }
-  .die-stage { width: 68px; height: 68px; }
-  .die { width: 58px; height: 58px; margin: 5px; }
-  .cube-face { padding: 8px; }
-  .cube-face:nth-child(1) { transform: translateZ(29px); }
-  .cube-face:nth-child(2) { transform: rotateY(180deg) translateZ(29px); }
-  .cube-face:nth-child(3) { transform: rotateY(90deg) translateZ(29px); }
-  .cube-face:nth-child(4) { transform: rotateY(-90deg) translateZ(29px); }
-  .cube-face:nth-child(5) { transform: rotateX(90deg) translateZ(29px); }
-  .cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(29px); }
+  .die-stage { width: 64px; height: 64px; }
+  .die { width: 54px; height: 54px; margin: 5px; }
+  .cube-face { padding: 8px; border-radius: 10px; }
+  .cube-face:nth-child(1) { transform: translateZ(27px); }
+  .cube-face:nth-child(2) { transform: rotateY(180deg) translateZ(27px); }
+  .cube-face:nth-child(3) { transform: rotateY(90deg) translateZ(27px); }
+  .cube-face:nth-child(4) { transform: rotateY(-90deg) translateZ(27px); }
+  .cube-face:nth-child(5) { transform: rotateX(90deg) translateZ(27px); }
+  .cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(27px); }
   .face-pips i { width: 9px; height: 9px; }
   .die-result { min-width: 58px; min-height: 34px; }
   .die-result strong { font-size: 1.1rem; }
