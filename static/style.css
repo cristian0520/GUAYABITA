@@ -101,15 +101,33 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.5rem; margin: 0
 .field { display: grid; gap: 6px; margin-bottom: 14px; }
 .field label, .field .lbl { font-weight: 600; font-size: 0.95rem; }
 .field small { color: var(--muted); }
-input[type="text"], input[type="number"] {
+input[type="text"], input[type="password"], input[type="number"] {
   width: 100%;
   background: rgba(0, 0, 0, 0.28);
   border: 1.5px solid var(--line);
   border-radius: 12px;
   padding: 11px 14px;
   color: var(--ivory);
+  caret-color: var(--rind);
 }
-input::placeholder { color: rgba(247, 240, 222, 0.4); }
+input::placeholder { color: rgba(247, 240, 222, 0.68); opacity: 1; }
+.auth-grid input[type="text"],
+.auth-grid input[type="password"] {
+  background: rgba(7, 15, 28, 0.72);
+  color: var(--ivory);
+  border-color: rgba(246, 211, 101, 0.32);
+}
+.auth-grid input:focus {
+  border-color: var(--rind);
+  box-shadow: 0 0 0 3px rgba(246, 211, 101, 0.12);
+}
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ivory);
+  -webkit-box-shadow: 0 0 0 1000px #0f1d31 inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .names { display: grid; gap: 8px; margin-bottom: 10px; }
 
