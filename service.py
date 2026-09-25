@@ -5,6 +5,11 @@ No depende de FastAPI, así que se puede probar por separado.
 from __future__ import annotations
 
 import secrets
+import base64
+import hashlib
+import hmac
+import re
+from datetime import timedelta
 from datetime import datetime, timezone
 from typing import Any
 
@@ -33,6 +38,89 @@ def _now() -> str:
 class GameService:
     def __init__(self, db: Database) -> None:
         self.db = db
+
+    # ------------------------------------------------------------------
+    # Usuarios
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _username(value: str) -> str:
+        username = (value or "").strip().lower()
+        if not re.fullmatch(r"[a-z0-9_]{3,20}", username):
+            raise GameError("El usuario debe tener 3-20 caracteres: letras, números o guion bajo.")
+        return username
+
+    @staticmethod
+    def _password_hash(password: str, salt: bytes | None = None) -> str:
+        if len(password or "") < 8:
+            raise GameError("La contraseña debe tener al menos 8 caracteres.")
+        salt = salt or secrets.token_bytes(16)
+        digest = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1)
+        return f"scrypt${base64.urlsafe_b64encode(salt).decode()}${base64.urlsafe_b64encode(digest).decode()}"
+
+    @staticmethod
+    def _check_password(password: str, encoded: str) -> bool:
+        try:
+            _, salt_text, digest_text = encoded.split("$")
+            salt = base64.urlsafe_b64decode(salt_text.encode())
+            expected = base64.urlsafe_b64decode(digest_text.encode())
+            actual = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1)
+            return hmac.compare_digest(actual, expected)
+        except (ValueError, TypeError):
+            return False
+
+    @staticmethod
+    def _public_user(row: dict) -> dict:
+        return {
+            "id": row["id"], "username": row["username"], "display_name": row["display_name"],
+            "avatar": row["avatar"], "badge": row["badge"],
+        }
+
+    def _auth_user(self, token: str | None) -> dict:
+        if not token:
+            raise GameError("Inicia sesión para continuar.", 401)
+        rows = self.db.execute(
+            "SELECT u.* FROM users u JOIN auth_sessions s ON s.user_id=u.id "
+            "WHERE s.token=? AND s.expires_at>?",
+            [token, _now()],
+        )
+        if not rows:
+            raise GameError("La sesión expiró. Inicia sesión de nuevo.", 401)
+        return rows[0]
+
+    def register_user(self, username: str, password: str, display_name: str = "") -> dict:
+        username = self._username(username)
+        display_name = " ".join((display_name or username).split())[:20] or username
+        password_hash = self._password_hash(password)
+        try:
+            self.db.batch([(
+                "INSERT INTO users (username,password_hash,display_name,created_at) VALUES (?,?,?,?)",
+                [username, password_hash, display_name, _now()],
+            )])
+        except DBError as exc:
+            if "UNIQUE" in str(exc).upper():
+                raise GameError("Ese nombre de usuario ya está registrado.", 409) from exc
+            raise
+        return self.login_user(username, password)
+
+    def login_user(self, username: str, password: str) -> dict:
+        username = self._username(username)
+        rows = self.db.execute("SELECT * FROM users WHERE username=?", [username])
+        if not rows or not self._check_password(password, rows[0]["password_hash"]):
+            raise GameError("Usuario o contraseña incorrectos.", 401)
+        token = secrets.token_urlsafe(32)
+        expires = datetime.now(timezone.utc) + timedelta(days=30)
+        self.db.execute(
+            "INSERT INTO auth_sessions (token,user_id,expires_at,created_at) VALUES (?,?,?,?)",
+            [token, rows[0]["id"], expires.isoformat(timespec="seconds"), _now()],
+        )
+        return {"token": token, "user": self._public_user(rows[0])}
+
+    def current_user(self, token: str | None) -> dict:
+        return self._public_user(self._auth_user(token))
+
+    def logout_user(self, token: str | None) -> None:
+        if token:
+            self.db.execute("DELETE FROM auth_sessions WHERE token=?", [token])
 
     # ------------------------------------------------------------------
     # Lectura

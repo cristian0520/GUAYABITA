@@ -89,11 +89,42 @@ class RechargeBody(ActionBody):
     amount: int = Field(..., ge=1, le=1_000_000)
 
 
+class AuthBody(BaseModel):
+    username: str
+    password: str
+    display_name: str = ""
+
+
+class AuthTokenBody(BaseModel):
+    token: str | None = None
+
+
 # ---------------------------------------------------------------- rutas
 @app.get("/health")
 def health():
     db.execute("SELECT 1")  # comprueba que la base de datos responde
     return {"ok": True, "db": db.kind}
+
+
+@app.post("/api/auth/register")
+def register(body: AuthBody):
+    return service.register_user(body.username, body.password, body.display_name)
+
+
+@app.post("/api/auth/login")
+def login(body: AuthBody):
+    return service.login_user(body.username, body.password)
+
+
+@app.post("/api/auth/logout")
+def logout(body: AuthTokenBody):
+    service.logout_user(body.token)
+    return {"ok": True}
+
+
+@app.get("/api/auth/me")
+def me(token: str | None = None):
+    return {"user": service.current_user(token)}
 
 
 @app.post("/api/games")

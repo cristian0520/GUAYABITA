@@ -18,7 +18,11 @@ Juego de dado y apuestas de Colombia, con partidas guardadas en **Turso**.
 | `static/` | `index.html`, `style.css`, `app.js` |
 | `test_game.py` | 23 pruebas automáticas |
 
-Las tablas (`games`, `players`, `moves`) se crean solas al arrancar.
+Las tablas (`games`, `players`, `moves`, `users`, `auth_sessions`) se crean solas al arrancar.
+
+La aplicación incluye registro e inicio de sesión con usuario y contraseña. Las contraseñas
+se almacenan como hashes `scrypt` con salt aleatorio; nunca se guarda la contraseña original.
+Los usuarios reciben una sesión temporal y un perfil inicial con nombre visible, avatar y emblema.
 
 ## 1. Crear la base en Turso
 

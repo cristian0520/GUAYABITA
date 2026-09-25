@@ -17,8 +17,14 @@
     set(v) { try { localStorage.setItem("guayabita.session", JSON.stringify(v)); } catch { /* modo privado */ } },
     clear() { try { localStorage.removeItem("guayabita.session"); } catch { /* nada */ } },
   };
+  const authStore = {
+    get() { try { return JSON.parse(localStorage.getItem("guayabita.auth") || "null"); } catch { return null; } },
+    set(v) { localStorage.setItem("guayabita.auth", JSON.stringify(v)); },
+    clear() { localStorage.removeItem("guayabita.auth"); },
+  };
 
   let session = store.get(); // { code, token }
+  let auth = authStore.get(); // { token, user }
   let state = null;
   let busy = false;
   let tab = "online";
@@ -194,9 +200,21 @@
     app.innerHTML = `
       <main class="home">
         <header>
+          <p class="eyebrow">Mesa online colombiana</p>
           <h1 class="wordmark">La Guayabita</h1>
-          <p class="tag">Un dado, unas fichas y una mesa con amigos.</p>
+          <p class="tag">Dados, estrategia y partidas con amigos.</p>
         </header>
+
+        <section class="panel auth-panel">
+          ${auth
+            ? `<div class="profile-line"><span class="profile-avatar">${esc(auth.user.avatar)}</span><span><b>${esc(auth.user.display_name)}</b><small>@${esc(auth.user.username)} · ${esc(auth.user.badge)}</small></span><button class="btn ghost small" data-action="auth-logout">Cerrar sesión</button></div>`
+            : `<h2>Tu cuenta</h2>
+               <p class="muted">Crea tu perfil para conservar tu nombre y prepararte para logros y emblemas.</p>
+               <div class="auth-grid">
+                 <form id="auth-login"><h3>Entrar</h3><input name="username" minlength="3" maxlength="20" placeholder="Usuario" autocomplete="username" required><input name="password" type="password" minlength="8" placeholder="Contraseña" autocomplete="current-password" required><button class="btn" type="submit">Iniciar sesión</button></form>
+                 <form id="auth-register"><h3>Crear usuario</h3><input name="username" minlength="3" maxlength="20" placeholder="Usuario" autocomplete="username" required><input name="display_name" maxlength="20" placeholder="Nombre visible"><input name="password" type="password" minlength="8" placeholder="Contraseña (8+ caracteres)" autocomplete="new-password" required><button class="btn" type="submit">Registrarme</button></form>
+               </div>`}
+        </section>
 
         <section class="panel">
           <div class="tabs" role="tablist" style="margin-top:0">
@@ -268,6 +286,7 @@
       <h1 class="wordmark">La Guayabita</h1>
       <div class="right">
         ${showCode && state ? `<span class="code" title="Código de la mesa">${esc(state.code)}</span>` : ""}
+        ${auth ? `<span class="profile-mini">${esc(auth.user.avatar)} ${esc(auth.user.display_name)}</span>` : ""}
         <button class="btn ghost small sound-toggle" data-action="sound-toggle" aria-pressed="${soundEnabled}">${soundEnabled ? "🔊 Sonido" : "🔇 Silencio"}</button>
         <button class="btn ghost small" data-action="leave">Salir</button>
       </div>
@@ -485,6 +504,15 @@
           if (soundEnabled) { tone(660, 0.08); tone(880, 0.12, "sine", 0.03, 0.08); }
           render();
           break;
+        case "auth-logout":
+          if (auth) {
+            await api("/api/auth/logout", { method: "POST", body: { token: auth.token } });
+            authStore.clear();
+            auth = null;
+            toast("Sesión cerrada.");
+            renderHome();
+          }
+          break;
         case "add-name": {
           const box = $("#names");
           if (box.children.length >= 8) return toast("Máximo 8 jugadores.");
@@ -595,6 +623,17 @@
           const d = await api(`/api/games/${info.code}/join`, { method: "POST", body: { name: nm } });
           await enterGame(d.code, d.token);
         }
+      } else if (f.id === "auth-login" || f.id === "auth-register") {
+        const body = {
+          username: f.elements.username.value,
+          password: f.elements.password.value,
+          display_name: f.elements.display_name ? f.elements.display_name.value : "",
+        };
+        const result = await api(`/api/auth/${f.id === "auth-login" ? "login" : "register"}`, { method: "POST", body });
+        auth = result;
+        authStore.set(auth);
+        toast(f.id === "auth-login" ? "Sesión iniciada." : "Usuario creado correctamente.");
+        renderHome();
       }
     } catch (err) {
       toast(err.message);

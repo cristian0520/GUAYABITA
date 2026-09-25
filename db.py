@@ -78,8 +78,28 @@ SCHEMA: list[str] = [
         created_at  TEXT NOT NULL
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS users (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        username      TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        display_name  TEXT NOT NULL,
+        avatar        TEXT NOT NULL DEFAULT '🧑',
+        badge         TEXT NOT NULL DEFAULT '🎲',
+        created_at    TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS auth_sessions (
+        token      TEXT PRIMARY KEY,
+        user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )
+    """,
     "CREATE INDEX IF NOT EXISTS idx_players_game ON players(game_code)",
     "CREATE INDEX IF NOT EXISTS idx_moves_game ON moves(game_code, id)",
+    "CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id)",
 ]
 
 
