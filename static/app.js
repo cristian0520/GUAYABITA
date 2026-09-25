@@ -383,15 +383,6 @@
     return Math.max(0, Number(chips || 0) * COP_PER_CHIP);
   }
 
-  function canPayWallet(chips) {
-    return wallet >= walletCost(chips);
-  }
-
-  function debitWallet(chips) {
-    wallet -= walletCost(chips);
-    localStorage.setItem("guayabita.wallet", String(wallet));
-  }
-
   // ------------------------------------------------------------------ acciones de juego
   function updateBetUI() {
     const input = $("#bet-input");
@@ -493,14 +484,11 @@
           return leave();
         case "restart-round": {
           const entryChips = state.initial_chips - state.ante;
-          const roundCost = state.mode === "local" ? entryChips * state.players.length : entryChips;
-          if (!window.confirm(`¿Quieres volver a apostar ${cop(roundCost)} para iniciar otra ronda?`)) return;
-          if (!canPayWallet(roundCost)) return toast(`Necesitas ${cop(roundCost)} disponibles para volver a apostar.`);
+          if (!window.confirm(`¿Quieres volver a apostar ${cop(entryChips)} por jugador para iniciar otra ronda?`)) return;
           const d = await api(`/api/games/${session.code}/restart`, {
             method: "POST",
             body: { token: session.token },
           });
-          debitWallet(roundCost);
           state = d;
           toast("Nueva ronda iniciada. ¡Vuelvan a apostar!");
           return render();
@@ -530,22 +518,18 @@
     try {
       if (f.id === "form-online") {
         const initialChips = Math.floor(+f.elements.chips.value / COP_PER_CHIP);
-        if (!canPayWallet(initialChips)) throw new Error(`Necesitas ${cop(initialChips)} disponibles para crear la mesa.`);
         const d = await api("/api/games", {
           method: "POST",
           body: { mode: "online", host_name: f.elements.host.value, ante: Math.floor(+f.elements.ante.value / COP_PER_CHIP), initial_chips: initialChips },
         });
-        debitWallet(initialChips);
         await enterGame(d.code, d.token);
       } else if (f.id === "form-local") {
         const names = [...f.querySelectorAll("input[name=n]")].map((i) => i.value.trim()).filter(Boolean);
         const initialChips = Math.floor(+f.elements.chips.value / COP_PER_CHIP);
-        if (!canPayWallet(initialChips * names.length)) throw new Error(`Necesitas ${cop(initialChips * names.length)} para sentar a todos los jugadores.`);
         const d = await api("/api/games", {
           method: "POST",
           body: { mode: "local", names, ante: Math.floor(+f.elements.ante.value / COP_PER_CHIP), initial_chips: initialChips },
         });
-        debitWallet(initialChips * names.length);
         await enterGame(d.code, d.token);
       } else if (f.id === "form-join") {
         const code = f.elements.code.value.trim().toUpperCase();
@@ -555,10 +539,7 @@
         } else {
           const nm = f.elements.name.value.trim();
           if (!nm) throw new Error("Escribe tu nombre para entrar.");
-          const initialChips = info.initial_chips - info.ante;
-          if (!canPayWallet(initialChips)) throw new Error(`Necesitas ${cop(initialChips)} disponibles para entrar a la mesa.`);
           const d = await api(`/api/games/${info.code}/join`, { method: "POST", body: { name: nm } });
-          debitWallet(initialChips);
           await enterGame(d.code, d.token);
         }
       }
