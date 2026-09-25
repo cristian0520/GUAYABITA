@@ -109,13 +109,16 @@ input[type="text"], input[type="password"], input[type="number"] {
   padding: 11px 14px;
   color: var(--ivory);
   caret-color: var(--rind);
+  font-weight: 700;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55);
 }
-input::placeholder { color: rgba(247, 240, 222, 0.68); opacity: 1; }
+input::placeholder { color: rgba(247, 240, 222, 0.78); opacity: 1; font-weight: 600; }
 .auth-grid input[type="text"],
 .auth-grid input[type="password"] {
-  background: rgba(7, 15, 28, 0.72);
-  color: var(--ivory);
+  background: #0b1729;
+  color: #ffffff;
   border-color: rgba(246, 211, 101, 0.32);
+  font-weight: 800;
 }
 .auth-grid input:focus {
   border-color: var(--rind);
@@ -124,8 +127,9 @@ input::placeholder { color: rgba(247, 240, 222, 0.68); opacity: 1; }
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--ivory);
+  -webkit-text-fill-color: #ffffff;
   -webkit-box-shadow: 0 0 0 1000px #0f1d31 inset;
+  font-weight: 800;
   transition: background-color 9999s ease-in-out 0s;
 }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
