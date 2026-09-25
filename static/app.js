@@ -70,12 +70,15 @@
 
   function dieHTML(id, value, caption) {
     const label = value ? `Dado en ${value}` : "Dado sin lanzar";
-    return `<div class="die-wrap"><div class="die-stage"><div class="die ${value ? "" : "blank"}" id="${id}" data-value="${value || 0}" role="img" aria-label="${label}">${[1, 2, 3, 4, 5, 6].map(faceHTML).join("")}</div></div><span class="cap">${caption}</span></div>`;
+    const faceValues = [value || 1, 6, 2, 5, 3, 4];
+    return `<div class="die-wrap ${value ? "" : "is-hidden"}"><div class="die-stage"><div class="die ${value ? "" : "blank"}" id="${id}" data-value="${value || 0}" role="img" aria-label="${label}">${faceValues.map(faceHTML).join("")}</div></div><strong class="die-result">${value || "—"}</strong><span class="cap">${caption}</span></div>`;
   }
 
   function setDie(el, value) {
     el.dataset.value = value || 0;
     el.setAttribute("aria-label", value ? `Dado en ${value}` : "Dado sin lanzar");
+    const result = el.closest(".die-wrap")?.querySelector(".die-result");
+    if (result) result.textContent = value || "—";
     [...el.children].forEach((face, faceIndex) => {
       const pips = PIPS[((value + faceIndex - 1) % 6) + 1] || [];
       [...face.querySelectorAll("i")].forEach((dot, i) => dot.classList.toggle("on", pips.includes(i)));
@@ -84,6 +87,7 @@
 
   function startRolling(el) {
     if (!el) return () => {};
+    el.closest(".die-wrap")?.classList.remove("is-hidden");
     el.classList.remove("blank");
     el.classList.remove("landing");
     el.classList.add("rolling");
@@ -282,7 +286,7 @@
     const bump = lastPot !== null && lastPot !== s.pot;
     lastPot = s.pot;
 
-    const avatars = ["♠", "♦", "♣", "♥", "★", "◆", "♣", "♠"];
+    const avatars = ["🧑", "👩", "🧔", "👨", "👩‍🦱", "🧑‍🎤", "👨‍🦰", "👩‍🦳"];
     const seats = Array.from({ length: 8 }, (_, seat) => {
       const p = s.players.find((player) => player.seat === seat);
       if (!p) {
@@ -295,13 +299,14 @@
       const refill = p.out && !finished
         ? `<button class="btn ghost small refill-seat" data-action="recharge-player" data-seat="${p.seat}">Recargar</button>`
         : "";
+      const turnIcon = p.seat === s.current_seat && !finished ? '<span class="turn-die" title="Turno actual">🎲</span>' : "";
       return `<li class="${cls}" ${p.seat === s.current_seat && !finished ? 'aria-current="true"' : ""}>
-        <span class="avatar">${avatars[seat]}</span><span class="seat-copy"><span class="n">${esc(p.name)} ${you}</span><span class="seat-status">${p.out ? "Sin saldo" : cop(p.chips)}</span></span>${refill}
+        <span class="avatar">${avatars[seat]}</span><span class="seat-copy"><span class="n">${esc(p.name)} ${you}</span><span class="seat-status">${p.out ? "Sin saldo" : `${cop(p.chips)} 🪙`}</span></span>${turnIcon}${refill}
       </li>`;
     }).join("");
 
     const log = s.moves.length
-      ? `<ol>${s.moves.map((m) => `<li>${esc(m.message)}<div class="meta">Turno ${m.turn_no}, pozo ${m.pot_after}</div></li>`).join("")}</ol>`
+      ? `<ol>${s.moves.map((m) => `<li>${esc(m.message)}<div class="meta">Turno ${m.turn_no}, pozo ${cop(m.pot_after)}</div></li>`).join("")}</ol>`
       : `<p class="empty">Aún no hay jugadas. Aquí quedará el registro de cada turno.</p>`;
 
     app.innerHTML = `
@@ -345,11 +350,11 @@
       <div class="betbox">
         <div class="stepper">
           <button type="button" data-action="bet-dec" aria-label="Apostar una ficha menos">−</button>
-          <input id="bet-input" type="number" min="1" max="${max}" value="${betAmount}" inputmode="numeric" aria-label="Fichas a apostar">
+          <input id="bet-input" type="number" min="${COP_PER_CHIP}" max="${walletCost(max)}" step="${COP_PER_CHIP}" value="${walletCost(betAmount)}" inputmode="numeric" aria-label="Pesos colombianos a apostar">
           <button type="button" data-action="bet-inc" aria-label="Apostar una ficha más">+</button>
         </div>
         <div class="quick">
-          <button type="button" data-action="bet-set" data-v="1">1</button>
+          <button type="button" data-action="bet-set" data-v="1">${cop(1)}</button>
           <button type="button" data-action="bet-set" data-v="half">Mitad</button>
           <button type="button" data-action="bet-set" data-v="max">Todo (${cop(max)})</button>
         </div>
@@ -390,7 +395,7 @@
   function updateBetUI() {
     const input = $("#bet-input");
     const go = $("#bet-go");
-    if (input) input.value = betAmount;
+    if (input) input.value = walletCost(betAmount);
     if (go) go.textContent = `Apostar ${cop(betAmount)} y lanzar`;
   }
 
@@ -487,12 +492,14 @@
           return leave();
         case "restart-round": {
           const entryChips = state.initial_chips - state.ante;
-          if (!canPayWallet(entryChips)) return toast(`Necesitas ${cop(entryChips)} disponibles para volver a apostar.`);
+          const roundCost = state.mode === "local" ? entryChips * state.players.length : entryChips;
+          if (!window.confirm(`¿Quieres volver a apostar ${cop(roundCost)} para iniciar otra ronda?`)) return;
+          if (!canPayWallet(roundCost)) return toast(`Necesitas ${cop(roundCost)} disponibles para volver a apostar.`);
           const d = await api(`/api/games/${session.code}/restart`, {
             method: "POST",
             body: { token: session.token },
           });
-          debitWallet(entryChips);
+          debitWallet(roundCost);
           state = d;
           toast("Nueva ronda iniciada. ¡Vuelvan a apostar!");
           return render();
@@ -506,7 +513,7 @@
   document.addEventListener("input", (e) => {
     if (e.target.id === "bet-input" && state) {
       const max = Math.max(1, state.max_bet);
-      const v = parseInt(e.target.value, 10);
+      const v = Math.floor(parseInt(e.target.value, 10) / COP_PER_CHIP);
       betAmount = clamp(Number.isFinite(v) ? v : 1, 1, max);
       const go = $("#bet-go");
       if (go) go.textContent = `Apostar ${cop(betAmount)} y lanzar`;
