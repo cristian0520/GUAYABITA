@@ -36,6 +36,9 @@
   let wallet = Number(localStorage.getItem("guayabita.wallet") || 100000);
   let soundEnabled = localStorage.getItem("guayabita.sound") !== "off";
   let audioContext = null;
+  let turnDeadline = 0;
+  let turnClock = null;
+  const TURN_SECONDS = 30;
 
   function audio() {
     if (!soundEnabled) return null;
@@ -198,11 +201,12 @@
   function renderHome(prefillCode = "") {
     stopPolling();
     app.innerHTML = `
-      <main class="home">
-        <header>
+      <main class="home home-shell">
+        <header class="home-hero">
           <p class="eyebrow">Mesa online colombiana</p>
           <h1 class="wordmark">La Guayabita</h1>
-          <p class="tag">Dados, estrategia y partidas con amigos.</p>
+          <p class="tag">Lanza, apuesta y conquista el pozo.</p>
+          <div class="hero-stats"><span>🎲 Dados 3D</span><span>🏆 Salas online</span><span>🪙 Pesos COP</span></div>
         </header>
 
         <section class="panel auth-panel">
@@ -348,11 +352,13 @@
     const last = s.moves[0] || null;
 
     // Reinicia la apuesta sugerida al cambiar de turno/fase
-    const key = `${s.turn_no}:${s.phase}`;
+    const key = `${s.turn_no}:${s.phase}:${s.current_seat}`;
     if (key !== betKey) {
       betKey = key;
       betAmount = clamp(Math.min(s.ante, s.max_bet), 1, Math.max(1, s.max_bet));
+      turnDeadline = Date.now() + TURN_SECONDS * 1000;
     }
+    startTurnClock();
 
     // Dados a mostrar: el primer tiro en curso o el último turno jugado
     let a = null, b = null;
@@ -424,16 +430,18 @@
     const who = online ? (mine ? "Es tu turno" : `Turno de <b>${esc(cur.name)}</b>`) : `Turno de <b>${esc(cur.name)}</b>`;
     if (!s.can_act) return `<div class="controls"><p class="turnline">${who}</p><p class="hint">Esperando a que ${esc(cur.name)} juegue…</p></div>`;
 
+    const timer = `<div class="turn-timer" role="timer"><span>⏱️ Tiempo de turno</span><strong id="turn-countdown">${remainingTurnSeconds()}s</strong></div>`;
     if (s.phase === "first_roll") {
       return `<div class="controls"><p class="turnline">${who}</p>
+        ${timer}
         <button class="btn big" data-action="roll" data-primary>Lanzar el dado</button>
         <p class="hint">1 pone una ficha, 6 saca una, y del 2 al 5 puedes apostar.</p></div>`;
     }
     const max = s.max_bet;
     if (max <= 0) {
-      return `<div class="controls"><p class="turnline">${who}</p><p class="hint">El pozo está vacío. Puedes pasar; la mesa sigue activa.</p><button class="btn big" data-action="pass" data-primary>Pasar turno</button></div>`;
+      return `<div class="controls"><p class="turnline">${who}</p>${timer}<p class="hint">El pozo está vacío. Puedes pasar; la mesa sigue activa.</p><button class="btn big" data-action="pass" data-primary>Pasar turno</button></div>`;
     }
-    return `<div class="controls"><p class="turnline">${who}</p>
+    return `<div class="controls"><p class="turnline">${who}</p>${timer}
       <div class="betbox">
         <div class="stepper">
           <button type="button" data-action="bet-dec" aria-label="Apostar una ficha menos">−</button>
@@ -451,6 +459,21 @@
         </div>
         <p class="hint">Máximo ${cop(max)}: lo que hay en el pozo o tus fichas, lo que sea menor.</p>
       </div></div>`;
+  }
+
+  function remainingTurnSeconds() {
+    return Math.max(0, Math.ceil((turnDeadline - Date.now()) / 1000));
+  }
+
+  function startTurnClock() {
+    if (turnClock) return;
+    turnClock = setInterval(() => {
+      const el = $("#turn-countdown");
+      if (!el) return;
+      const seconds = remainingTurnSeconds();
+      el.textContent = `${seconds}s`;
+      el.classList.toggle("urgent", seconds <= 8);
+    }, 250);
   }
 
   function finishedHTML(s) {
