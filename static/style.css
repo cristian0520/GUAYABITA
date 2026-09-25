@@ -1,3 +1,7 @@
+/* =========================================================
+   Variables visuales
+   Cambia aquí la paleta y las tipografías de toda la aplicación.
+   ========================================================= */
 :root {
   --wood: #101826;
   --wood-edge: #26344a;
@@ -15,12 +19,16 @@
   --display: "Alfa Slab One", "Rockwell", "Georgia", serif;
   --body: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+/* Animación auxiliar usada por elementos que rebotan sobre la mesa. */
 @keyframes die-bounce {
   0%, 100% { margin-top: 5px; }
   45% { margin-top: -24px; }
   70% { margin-top: 2px; }
 }
 
+/* =========================================================
+   Restablecimiento y estilos globales
+   ========================================================= */
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
@@ -42,7 +50,9 @@ button { cursor: pointer; }
 
 .wrap { width: min(1180px, 100%); margin: 0 auto; padding: 32px 20px 56px; }
 
-/* ---------- Tipografía ---------- */
+/* =========================================================
+   Tipografía y títulos
+   ========================================================= */
 .wordmark {
   font-family: var(--display);
   font-weight: 400;
@@ -58,7 +68,9 @@ button { cursor: pointer; }
 h2 { font-family: var(--display); font-weight: 400; font-size: 1.5rem; margin: 0 0 12px; }
 .muted { color: var(--muted); }
 
-/* ---------- Botones ---------- */
+/* =========================================================
+   Botones, enlaces y estados interactivos
+   ========================================================= */
 .btn {
   border: 0;
   border-radius: 10px;
@@ -83,7 +95,9 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 1.5rem; margin: 0
 .btn.ghost:hover { border-color: var(--ivory); }
 .btn.small { padding: 8px 14px; font-size: 0.9rem; }
 
-/* ---------- Formularios ---------- */
+/* =========================================================
+   Formularios de autenticación, lobby y apuestas
+   ========================================================= */
 .panel {
   background: var(--felt);
   border: 1px solid rgba(247, 245, 239, 0.12);
@@ -198,13 +212,25 @@ input:-webkit-autofill:focus {
 .loading-panel { display: flex; align-items: center; gap: 12px; color: var(--muted); }
 .loading-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--guava); box-shadow: 0 0 0 6px rgba(255, 128, 107, 0.14); animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: scale(0.65); opacity: 0.55; } }
+.loading-cover { min-height: min(720px, 100vh); display: grid; justify-items: center; align-content: center; gap: 10px; padding: 28px 18px; text-align: center; background: radial-gradient(circle at 50% 15%, rgba(116, 69, 193, .55), transparent 42%), linear-gradient(145deg, #111b3b, #07172a 72%); border: 1px solid rgba(122,228,255,.25); border-radius: 26px; box-shadow: 0 22px 65px rgba(0,0,0,.4); }
+.loading-logo { color: var(--rind); font-family: var(--display); font-size: clamp(2rem, 8vw, 3.8rem); text-shadow: 0 4px 0 var(--guava-deep); }
+.loading-cover h1 { margin: 0; font-size: clamp(1.3rem, 4vw, 2rem); }
+.loading-tip { margin: 0; color: var(--muted); font-weight: 700; }
+.loading-rules { width: min(480px, 100%); display: grid; gap: 5px; margin: 8px 0; padding: 14px 16px; text-align: left; border: 1px solid rgba(246,211,101,.3); border-radius: 16px; background: rgba(7,15,28,.45); }
+.loading-rules p { margin: 0; font-size: .9rem; }
+.loading-chat { max-width: 360px; padding: 9px 14px; border-radius: 14px 14px 14px 3px; background: #fff8e8; color: #24131b; font-weight: 700; box-shadow: 0 7px 18px rgba(0,0,0,.25); }
+.loading-bar { width: min(270px, 80%); height: 6px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.14); }
+.loading-bar i { display: block; width: 100%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--guava), var(--rind)); transform: scaleX(0); transform-origin: left; animation: loading-progress 5s linear forwards; }
+@keyframes loading-progress { to { transform: scaleX(1); } }
 .divider { text-align: center; color: var(--muted); margin: 4px 0; }
 details.rules { border-top: 1px solid var(--line); padding-top: 14px; }
 details.rules summary { cursor: pointer; font-weight: 700; }
 details.rules ul { padding-left: 20px; color: var(--muted); }
 details.rules li { margin: 6px 0; max-width: 62ch; }
 
-/* ---------- Encabezado de mesa ---------- */
+/* =========================================================
+   Encabezado, perfil y controles superiores de la mesa
+   ========================================================= */
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .topbar .wordmark { font-size: 1.7rem; text-shadow: 0 2px 0 var(--guava-deep); }
 .topbar .right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -217,7 +243,9 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
   padding: 4px 12px;
 }
 
-/* ---------- Mesa ---------- */
+/* =========================================================
+   Mesa, paño, asientos y elementos decorativos
+   ========================================================= */
 .layout { display: grid; gap: 18px; grid-template-columns: 1fr; }
 @media (min-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr) 320px; } }
 
@@ -303,6 +331,7 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 .wallet-bar small { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .wallet-bar strong { color: var(--rind); font-size: 1.1rem; }
 
+/* Pozo: las fichas se generan en app.js y estas reglas les dan profundidad. */
 .felt { text-align: center; padding: 8px 0 4px; position: relative; }
 .felt-inner { display: grid; justify-items: center; gap: 18px; }
 
@@ -316,6 +345,7 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 .pot.bump { animation: bump 0.45s ease; }
 @keyframes bump { 40% { transform: scale(1.12) rotate(-3deg); } }
 
+/* Dados 3D: tamaño, caras, color y movimiento del lanzamiento. */
 .dice { display: flex; gap: 32px; justify-content: center; align-items: flex-end; min-height: 150px; }
 .die-wrap { display: grid; gap: 6px; justify-items: center; }
 .die-wrap.is-hidden { display: none; }
@@ -353,6 +383,7 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
   100% { transform: rotateX(-16deg) rotateY(18deg) translateY(0) rotateZ(0); filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.3)); }
 }
 
+/* Mensaje de la jugada actual y controles de turno. */
 .banner {
   min-height: 3.2em; max-width: 46ch; margin: 0 auto;
   font-size: 1.05rem; font-weight: 600;
@@ -380,7 +411,9 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 .winnerbox { display: grid; gap: 6px; justify-items: center; }
 .winnerbox .big { font-family: var(--display); font-size: clamp(1.8rem, 6vw, 2.8rem); color: var(--rind); margin: 0; }
 
-/* ---------- Historial ---------- */
+/* =========================================================
+   Historial, chat y burbujas temporales
+   ========================================================= */
 .log { background: rgba(0, 0, 0, 0.25); border-radius: 18px; padding: 16px; max-height: 560px; overflow: auto; }
 .log h3 { margin: 0 0 10px; font-size: 1rem; }
 .log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -389,7 +422,9 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 .log .meta { color: var(--muted); font-size: 0.82rem; }
 .empty { color: var(--muted); font-size: 0.93rem; }
 
-/* ---------- Sala de espera ---------- */
+/* =========================================================
+   Lobby, salas públicas y selección de silla
+   ========================================================= */
 .lobby { max-width: 560px; }
 .lobby .bigcode { font-family: var(--display); font-size: clamp(2.4rem, 12vw, 4rem); letter-spacing: 0.14em; margin: 4px 0 12px; color: var(--rind); }
 .room-list { display: grid; gap: 8px; }
@@ -405,14 +440,12 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 .chat-bubble { max-width: 92%; display: grid; gap: 2px; padding: 8px 10px; border-radius: 12px 12px 12px 4px; background: #152943; border: 1px solid rgba(246, 211, 101, 0.24); color: #ffffff; font-size: .88rem; }
 .chat-bubble b { color: var(--rind); font-size: .76rem; }
 .chat-bubble span { font-weight: 700; overflow-wrap: anywhere; }
-.table-bubble { position: absolute; z-index: 4; max-width: 180px; padding: 7px 10px; border-radius: 13px 13px 13px 3px; background: #fff8e8; color: #24131b; box-shadow: 0 6px 14px rgba(0,0,0,.28); font-size: .72rem; text-align: left; animation: bubble-in .28s ease both; }
+.table-bubble { position: absolute; z-index: 4; left: 50%; top: 7%; transform: translateX(-50%); max-width: min(180px, 42%); padding: 7px 10px; border-radius: 13px 13px 13px 3px; background: #fff8e8; color: #24131b; box-shadow: 0 6px 14px rgba(0,0,0,.28); font-size: .72rem; text-align: left; animation: bubble-in .28s ease both, bubble-out .5s ease 5.8s forwards; pointer-events: none; }
 .table-bubble::after { content: ""; position: absolute; left: 12px; bottom: -7px; border: 7px solid transparent; border-top-color: #fff8e8; border-left-width: 0; }
 .table-bubble b, .table-bubble span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .table-bubble b { color: #8a3c55; font-size: .65rem; }
-.bubble-0 { left: 8%; top: 20%; transform: rotate(-2deg); }
-.bubble-1 { right: 8%; top: 27%; transform: rotate(2deg); }
-.bubble-2 { left: 15%; bottom: 12%; transform: rotate(-1deg); }
-@keyframes bubble-in { from { opacity: 0; transform: translateY(8px) scale(.92); } to { opacity: 1; } }
+@keyframes bubble-in { from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(.92); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes bubble-out { to { opacity: 0; transform: translateX(-50%) translateY(-5px) scale(.94); } }
 .turn-timer { display: flex; align-items: center; gap: 10px; padding: 7px 14px; border-radius: 999px; background: rgba(7, 15, 28, .72); border: 1px solid rgba(246, 211, 101, .45); color: var(--muted); font-size: .8rem; font-weight: 800; }
 .turn-timer strong { min-width: 2.5ch; color: var(--rind); font-size: 1.05rem; text-align: center; }
 .turn-timer strong.urgent { color: #ff806b; animation: timer-pulse .55s ease-in-out infinite alternate; }
@@ -422,7 +455,9 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 .plist { list-style: none; margin: 14px 0 20px; padding: 0; display: grid; gap: 8px; }
 .plist li { background: rgba(0, 0, 0, 0.28); border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; }
 
-/* ---------- Aviso ---------- */
+/* =========================================================
+   Avisos, portada de carga y responsive
+   ========================================================= */
 .toast {
   position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
   background: var(--ivory); color: var(--ink); padding: 12px 18px; border-radius: 12px;
