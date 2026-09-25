@@ -1,4 +1,4 @@
-# La Guayabita
+# La Guayabita AXM
 
 Juego de dado y apuestas de Colombia, con partidas guardadas en **Turso**.
 

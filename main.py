@@ -1,5 +1,5 @@
 """
-La Guayabita - servidor web (FastAPI).
+La Guayabita AXM - servidor web (FastAPI).
 
 Ejecutar en local:   uvicorn main:app --reload
 Producción (Render): uvicorn main:app --host 0.0.0.0 --port $PORT
@@ -40,7 +40,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="La Guayabita", lifespan=lifespan)
+app = FastAPI(title="La Guayabita AXM", lifespan=lifespan)
 
 
 # ----------------------------------------------------------------

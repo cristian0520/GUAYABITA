@@ -1,5 +1,5 @@
 """
-Reglas de La Guayabita (funciones puras, sin base de datos ni web).
+Reglas de La Guayabita AXM (funciones puras, sin base de datos ni web).
 
 Resumen de las reglas implementadas:
   * Cada jugador pone la "apuesta inicial" (ante) en el pozo.

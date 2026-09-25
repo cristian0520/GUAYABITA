@@ -40,6 +40,7 @@
   let turnClock = null;
   const TURN_SECONDS = 15;
   let turnExpiryRequested = false;
+  let continueLoading = null;
 
   // Web Audio necesita una interacción del usuario para desbloquearse en el navegador.
   function audio() {
@@ -235,18 +236,21 @@
   function renderLoading() {
     app.innerHTML = `
       <main class="loading-cover">
-        <div class="loading-logo">La Guayabita</div>
-        <div class="loading-dice" aria-hidden="true"><span>⚄</span><span>⚂</span></div>
-        <h1>Preparando la mesa</h1>
-        <p class="loading-tip">Las reglas se explican jugando:</p>
+        <div class="loading-logo">La Guayabita AXM</div>
+        <div class="loading-dice" aria-hidden="true"><span class="dice-pink">⚄</span><span class="dice-blue">⚂</span><span class="dice-yellow">⚅</span></div>
+        <h1>Preparando la mesa...</h1>
+        <p class="loading-tip">Lee las instrucciones antes de continuar:</p>
         <div class="loading-rules">
+          <div class="loading-sparkles" aria-hidden="true">✦ ✧ ✦</div>
           <p>🎲 <b>Lanza:</b> con 1 pones una ficha y con 6 sacas una.</p>
           <p>🪙 <b>Apuesta:</b> con 2, 3, 4 o 5 puedes apostar.</p>
           <p>🏆 <b>Gana:</b> en el segundo tiro necesitas sacar un número mayor.</p>
           <p>⏱️ <b>Rápido:</b> tienes 15 segundos o pierdes el turno.</p>
+          <div class="loading-sparkles" aria-hidden="true">★ ✧ ★</div>
         </div>
         <div class="loading-chat"><span>💬</span> “¡Buena suerte! Que ruede el dado…”</div>
         <div class="loading-bar"><i></i></div>
+        <button class="btn loading-continue" data-action="continue-loading">Continuar a La Guayabita AXM</button>
       </main>`;
   }
 
@@ -257,7 +261,7 @@
       <main class="home home-shell">
         <header class="home-hero">
           <p class="eyebrow">Mesa online colombiana</p>
-          <h1 class="wordmark">La Guayabita</h1>
+          <h1 class="wordmark">La Guayabita AXM</h1>
           <p class="tag">Lanza, apuesta y conquista el pozo.</p>
           <div class="hero-stats"><span>🎲 Dados 3D</span><span>🏆 Salas online</span><span>🪙 Pesos COP</span></div>
         </header>
@@ -360,7 +364,7 @@
   // ------------------------------------------------------------------ pantalla: sala de espera
   function topbar(showCode = true) {
     return `<div class="topbar">
-      <h1 class="wordmark">La Guayabita</h1>
+      <h1 class="wordmark">La Guayabita AXM</h1>
       <div class="right">
         ${showCode && state ? `<span class="code" title="Código de la mesa">${esc(state.code)}</span>` : ""}
         ${auth ? `<span class="profile-mini">${esc(auth.user.avatar)} ${esc(auth.user.display_name)}</span>` : ""}
@@ -475,7 +479,7 @@
           <div class="poker-table">
             <ul class="seats" aria-label="Jugadores y fichas">${seats}</ul>
             <div class="felt"><div class="felt-inner">${speech}
-              <div class="table-mark" aria-label="La Guayabita"><span class="table-mark-icon">✦ 🥤 🪙</span><strong>La Guayabita</strong><small>MESA DE DADOS</small></div>
+              <div class="table-mark" aria-label="La Guayabita AXM"><span class="table-mark-icon">✦ 🥤 🪙</span><strong>La Guayabita AXM</strong><small>MESA DE DADOS</small></div>
               ${potHTML(s.pot, bump)}
               <div class="dice">${dieHTML("die-a", a, "Primer tiro")}${dieHTML("die-b", b, "Segundo tiro")}</div>
               <p class="banner" id="banner">${esc(banner)}</p>
@@ -613,6 +617,9 @@
           $("#form-local").hidden = tab !== "local";
           break;
         }
+        case "continue-loading":
+          if (continueLoading) continueLoading();
+          break;
         case "select-room":
           $("#jn-code").value = el.dataset.code;
           $("#jn-name").focus();
@@ -806,7 +813,11 @@
   (async function boot() {
     const urlCode = (new URLSearchParams(location.search).get("code") || "").toUpperCase();
     renderLoading();
-    await sleep(5000);
+    await new Promise((resolve) => {
+      continueLoading = resolve;
+      setTimeout(resolve, 12000);
+    });
+    continueLoading = null;
     if (session && (!urlCode || urlCode === session.code)) {
       try { await refresh(true); return; } catch { store.clear(); session = null; }
     }
