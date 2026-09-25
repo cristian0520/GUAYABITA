@@ -228,6 +228,24 @@
     return renderTable();
   }
 
+  function renderLoading() {
+    app.innerHTML = `
+      <main class="loading-cover">
+        <div class="loading-logo">La Guayabita</div>
+        <div class="loading-dice" aria-hidden="true"><span>⚄</span><span>⚂</span></div>
+        <h1>Preparando la mesa</h1>
+        <p class="loading-tip">Las reglas se explican jugando:</p>
+        <div class="loading-rules">
+          <p>🎲 <b>Lanza:</b> con 1 pones una ficha y con 6 sacas una.</p>
+          <p>🪙 <b>Apuesta:</b> con 2, 3, 4 o 5 puedes apostar.</p>
+          <p>🏆 <b>Gana:</b> en el segundo tiro necesitas sacar un número mayor.</p>
+          <p>⏱️ <b>Rápido:</b> tienes 15 segundos o pierdes el turno.</p>
+        </div>
+        <div class="loading-chat"><span>💬</span> “¡Buena suerte! Que ruede el dado…”</div>
+        <div class="loading-bar"><i></i></div>
+      </main>`;
+  }
+
   // ------------------------------------------------------------------ pantalla: inicio
   function renderHome(prefillCode = "") {
     stopPolling();
@@ -434,8 +452,12 @@
     const log = s.moves.length
       ? `<ol>${s.moves.map((m) => `<li>${esc(m.message)}<div class="meta">Turno ${m.turn_no}, pozo ${cop(m.pot_after)}</div></li>`).join("")}</ol>`
       : `<p class="empty">Aún no hay jugadas. Aquí quedará el registro de cada turno.</p>`;
-    const recentChat = (s.chat || []).slice(-3);
-    const speech = recentChat.map((m, i) => `<div class="table-bubble bubble-${i}"><b>${esc(m.player_name)}</b><span>${esc(m.message)}</span></div>`).join("");
+    const recentChat = (s.chat || []).filter((m) => {
+      const rawDate = m.created_at || "";
+      const created = Date.parse(rawDate) || Date.parse(`${rawDate}Z`);
+      return Number.isFinite(created) && Date.now() - created < 7000;
+    }).slice(-1);
+    const speech = recentChat.map((m) => `<div class="table-bubble"><b>${esc(m.player_name)}</b><span>${esc(m.message)}</span></div>`).join("");
     const chat = `<div class="chat"><h3>💬 Comentarios de la mesa</h3><div class="chat-list">${(s.chat || []).slice().reverse().map((m) => `<div class="chat-bubble"><b>${esc(m.player_name)}</b><span>${esc(m.message)}</span></div>`).join("") || '<p class="empty">Saluda a la mesa.</p>'}</div><form id="chat-form"><input name="message" maxlength="180" placeholder="Escribe un comentario…" required><button class="btn small" type="submit">Enviar</button></form></div>`;
 
     app.innerHTML = `
@@ -775,6 +797,8 @@
   // ------------------------------------------------------------------ arranque
   (async function boot() {
     const urlCode = (new URLSearchParams(location.search).get("code") || "").toUpperCase();
+    renderLoading();
+    await sleep(1400);
     if (session && (!urlCode || urlCode === session.code)) {
       try { await refresh(true); return; } catch { store.clear(); session = null; }
     }
