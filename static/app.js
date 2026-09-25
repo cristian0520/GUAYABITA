@@ -85,9 +85,14 @@
   function startRolling(el) {
     if (!el) return () => {};
     el.classList.remove("blank");
+    el.classList.remove("landing");
     el.classList.add("rolling");
     const timer = setInterval(() => setDie(el, 1 + Math.floor(Math.random() * 6)), 90);
-    return () => { clearInterval(timer); el.classList.remove("rolling"); };
+    return () => {
+      clearInterval(timer);
+      el.classList.remove("rolling");
+      el.classList.add("landing");
+    };
   }
 
   // ------------------------------------------------------------------ sesión y navegación
@@ -277,13 +282,22 @@
     const bump = lastPot !== null && lastPot !== s.pot;
     lastPot = s.pot;
 
-    const seats = s.players.map((p) => {
+    const avatars = ["♠", "♦", "♣", "♥", "★", "◆", "♣", "♠"];
+    const seats = Array.from({ length: 8 }, (_, seat) => {
+      const p = s.players.find((player) => player.seat === seat);
+      if (!p) {
+        return `<li class="seat empty" aria-label="Asiento ${seat + 1} libre">
+          <span class="avatar">${avatars[seat]}</span><span class="seat-copy"><span class="n">Asiento ${seat + 1}</span><span class="seat-status">Libre</span></span>
+        </li>`;
+      }
       const cls = ["seat", p.seat === s.current_seat && !finished ? "current" : "", p.out ? "out" : "", finished && p.seat === s.winner_seat ? "winner" : ""].join(" ");
       const you = online && s.you && s.you.seat === p.seat ? `<span class="tu">(tú)</span>` : "";
       const refill = p.out && !finished
         ? `<button class="btn ghost small refill-seat" data-action="recharge-player" data-seat="${p.seat}">Recargar</button>`
         : "";
-      return `<li class="${cls}" ${p.seat === s.current_seat && !finished ? 'aria-current="true"' : ""}><span class="n">${esc(p.name)}</span>${you}<span class="c">${cop(p.chips)}</span>${refill}</li>`;
+      return `<li class="${cls}" ${p.seat === s.current_seat && !finished ? 'aria-current="true"' : ""}>
+        <span class="avatar">${avatars[seat]}</span><span class="seat-copy"><span class="n">${esc(p.name)} ${you}</span><span class="seat-status">${p.out ? "Sin saldo" : cop(p.chips)}</span></span>${refill}
+      </li>`;
     }).join("");
 
     const log = s.moves.length
@@ -298,6 +312,7 @@
           <div class="poker-table">
             <ul class="seats" aria-label="Jugadores y fichas">${seats}</ul>
             <div class="felt"><div class="felt-inner">
+              <div class="table-mark" aria-label="La Guayabita"><span class="table-mark-icon">✦</span><strong>La Guayabita</strong><small>MESA DE DADOS</small></div>
               <div class="coin ${bump ? "bump" : ""}" role="img" aria-label="Pozo de ${cop(s.pot)}"><span class="num">${cop(s.pot)}</span><span class="lbl">Pozo</span></div>
               <div class="dice">${dieHTML("die-a", a, "Primer tiro")}${dieHTML("die-b", b, "Segundo tiro")}</div>
               <p class="banner" id="banner">${esc(banner)}</p>
@@ -372,13 +387,14 @@
     $$buttons(true);
     const stop = startRolling(dieId ? $(dieId) : null);
     try {
-      const [res] = await Promise.all([call(), sleep(reduceMotion ? 0 : 750)]);
+      const [res] = await Promise.all([call(), sleep(reduceMotion ? 0 : 650)]);
       state = res.state;
     } catch (e) {
       toast(e.message);
       if (e.status === 409 || e.status === 403) { try { state = await api(`/api/games/${session.code}${session.token ? `?token=${encodeURIComponent(session.token)}` : ""}`); } catch { /* se reintenta en el sondeo */ } }
     } finally {
       stop();
+      if (!reduceMotion) await sleep(350);
       busy = false;
       render();
       const primary = $("[data-primary]");

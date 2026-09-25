@@ -170,16 +170,28 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
   pointer-events: none;
 }
 .poker-table .seats { position: absolute; inset: 0; margin: 0; z-index: 2; pointer-events: none; }
-.poker-table .seat { position: absolute; pointer-events: auto; min-width: 130px; justify-content: center; background: rgba(5, 25, 30, 0.9); border-color: rgba(246, 211, 101, 0.25); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); }
+.poker-table .seat { position: absolute; pointer-events: auto; min-width: 142px; justify-content: flex-start; background: linear-gradient(145deg, rgba(14, 41, 43, 0.96), rgba(4, 22, 29, 0.96)); border-color: rgba(246, 211, 101, 0.25); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); }
 .poker-table .seat:nth-child(1) { top: 18px; left: 50%; transform: translateX(-50%); }
-.poker-table .seat:nth-child(2) { top: 25%; right: 1.5%; }
-.poker-table .seat:nth-child(3) { bottom: 22%; right: 1.5%; }
-.poker-table .seat:nth-child(4) { bottom: 18px; left: 50%; transform: translateX(-50%); }
-.poker-table .seat:nth-child(5) { bottom: 22%; left: 1.5%; }
-.poker-table .seat:nth-child(6) { top: 25%; left: 1.5%; }
-.poker-table .seat:nth-child(n+7) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.poker-table .seat:nth-child(2) { top: 10%; right: 13%; }
+.poker-table .seat:nth-child(3) { top: 43%; right: 1.5%; }
+.poker-table .seat:nth-child(4) { bottom: 10%; right: 13%; }
+.poker-table .seat:nth-child(5) { bottom: 18px; left: 50%; transform: translateX(-50%); }
+.poker-table .seat:nth-child(6) { bottom: 10%; left: 13%; }
+.poker-table .seat:nth-child(7) { top: 43%; left: 1.5%; }
+.poker-table .seat:nth-child(8) { top: 10%; left: 13%; }
+.poker-table .seat.empty { border-style: dashed; background: rgba(5, 25, 30, 0.42); color: rgba(247, 245, 239, 0.58); }
+.poker-table .seat.empty .avatar { border-color: rgba(247, 245, 239, 0.25); background: transparent; }
+.poker-table .seat.current { box-shadow: 0 0 0 3px rgba(246, 211, 101, 0.18), 0 8px 20px rgba(0, 0, 0, 0.4); }
+.poker-table .seat.winner { box-shadow: 0 0 0 3px rgba(246, 211, 101, 0.42), 0 8px 20px rgba(0, 0, 0, 0.4); }
+.seat .avatar { flex: 0 0 34px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; color: #10252b; background: linear-gradient(145deg, #f6d365, #c68a2a); border: 2px solid rgba(255, 255, 255, 0.35); font-size: 1.05rem; font-weight: 800; }
+.seat-copy { min-width: 0; display: grid; gap: 1px; }
+.seat-status { color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
 .poker-table .felt { min-height: 480px; display: grid; align-items: center; }
 .poker-table .felt-inner { gap: 22px; }
+.table-mark { display: grid; justify-items: center; gap: 2px; color: rgba(246, 211, 101, 0.76); text-transform: uppercase; letter-spacing: 0.12em; }
+.table-mark-icon { font-size: 1.2rem; line-height: 1; }
+.table-mark strong { font-family: var(--display); font-size: clamp(1.4rem, 3vw, 2.2rem); letter-spacing: 0.04em; color: rgba(247, 245, 239, 0.9); text-transform: none; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3); }
+.table-mark small { font-size: 0.62rem; font-weight: 800; }
 
 .seats { list-style: none; margin: 0 0 18px; padding: 0; display: flex; gap: 8px; flex-wrap: wrap; }
 .seat {
@@ -251,12 +263,18 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 .face-pips i.on { background: #b23c4c; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25); }
 .die.blank { opacity: 0.58; }
 .die.rolling { animation: shake 0.16s linear infinite; filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.4)); }
+.die.landing { animation: land 0.35s cubic-bezier(.2, .9, .3, 1) both; }
 @keyframes shake {
   0% { transform: rotateX(-16deg) rotateY(18deg) translateY(0) rotateZ(0); }
   25% { transform: rotateX(170deg) rotateY(-110deg) translateY(-13px) rotateZ(18deg); }
   50% { transform: rotateX(360deg) rotateY(210deg) translateY(2px) rotateZ(35deg); }
   75% { transform: rotateX(530deg) rotateY(390deg) translateY(-8px) rotateZ(52deg); }
   100% { transform: rotateX(704deg) rotateY(558deg) translateY(0) rotateZ(70deg); }
+}
+@keyframes land {
+  0% { transform: rotateX(704deg) rotateY(558deg) translateY(-34px) rotateZ(70deg); filter: drop-shadow(0 24px 18px rgba(0, 0, 0, 0.45)); }
+  70% { transform: rotateX(4deg) rotateY(20deg) translateY(4px) rotateZ(0); }
+  100% { transform: rotateX(-16deg) rotateY(18deg) translateY(0) rotateZ(0); filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.3)); }
 }
 
 .banner {
@@ -323,12 +341,15 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
   .face-pips i { width: 11px; height: 11px; }
   .panel { padding: 16px; border-width: 1px; }
   .poker-table { min-height: 620px; padding: 112px 10px 34px; border-width: 9px; border-radius: 42% / 24%; }
-  .poker-table .seat { min-width: 112px; padding: 7px 8px; font-size: 0.8rem; }
-  .poker-table .seat:nth-child(2), .poker-table .seat:nth-child(3) { right: -8px; }
-  .poker-table .seat:nth-child(5), .poker-table .seat:nth-child(6) { left: -8px; }
+  .poker-table .seat { min-width: 108px; padding: 7px 8px; font-size: 0.78rem; }
+  .poker-table .seat:nth-child(2), .poker-table .seat:nth-child(4) { right: -8px; }
+  .poker-table .seat:nth-child(3) { right: -12px; }
+  .poker-table .seat:nth-child(6), .poker-table .seat:nth-child(8) { left: -8px; }
+  .poker-table .seat:nth-child(7) { left: -12px; }
+  .seat .avatar { flex-basis: 28px; width: 28px; height: 28px; font-size: 0.85rem; }
   .poker-table .felt { min-height: 470px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .die.rolling, .coin.bump { animation: none; }
+  .die.rolling, .die.landing, .coin.bump { animation: none; }
   .btn { transition: none; }
 }
