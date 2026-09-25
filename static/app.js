@@ -798,7 +798,7 @@
   (async function boot() {
     const urlCode = (new URLSearchParams(location.search).get("code") || "").toUpperCase();
     renderLoading();
-    await sleep(1400);
+    await sleep(5000);
     if (session && (!urlCode || urlCode === session.code)) {
       try { await refresh(true); return; } catch { store.clear(); session = null; }
     }
