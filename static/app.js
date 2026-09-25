@@ -294,14 +294,16 @@
       ${topbar()}
       <div class="layout">
         <section class="panel game-panel">
-          <ul class="seats" aria-label="Jugadores y fichas">${seats}</ul>
           <div class="wallet-bar"><span><small>Dinero disponible para recargar</small><strong>${cop(wallet / COP_PER_CHIP)}</strong></span><span><small>Saldo en mesa</small><strong>${mePlayer ? cop(mePlayer.chips) : "—"}</strong></span><button class="btn ghost small" data-action="recharge">+ Recargar saldo</button></div>
-          <div class="felt"><div class="felt-inner">
-            <div class="coin ${bump ? "bump" : ""}" role="img" aria-label="Pozo de ${cop(s.pot)}"><span class="num">${cop(s.pot)}</span><span class="lbl">Pozo</span></div>
-            <div class="dice">${dieHTML("die-a", a, "Primer tiro")}${dieHTML("die-b", b, "Segundo tiro")}</div>
-            <p class="banner" id="banner">${esc(banner)}</p>
-            ${finished ? finishedHTML(s) : controlsHTML(s, cur, mine, online, mePlayer)}
-          </div></div>
+          <div class="poker-table">
+            <ul class="seats" aria-label="Jugadores y fichas">${seats}</ul>
+            <div class="felt"><div class="felt-inner">
+              <div class="coin ${bump ? "bump" : ""}" role="img" aria-label="Pozo de ${cop(s.pot)}"><span class="num">${cop(s.pot)}</span><span class="lbl">Pozo</span></div>
+              <div class="dice">${dieHTML("die-a", a, "Primer tiro")}${dieHTML("die-b", b, "Segundo tiro")}</div>
+              <p class="banner" id="banner">${esc(banner)}</p>
+              ${finished ? finishedHTML(s) : controlsHTML(s, cur, mine, online, mePlayer)}
+            </div></div>
+          </div>
         </section>
         <aside class="log" aria-label="Historial de jugadas"><h3>Jugadas recientes</h3>${log}</aside>
       </div>`;
@@ -351,7 +353,7 @@
       <p class="big">Ganó ${esc(w ? w.name : "nadie")}</p>
       <p class="muted" style="margin:0">${why} Termina con ${w ? cop(w.chips) : cop(0)}.</p>
       <div class="actions" style="margin-top:12px">
-        ${s.mode === "local" ? `<button class="btn" data-action="rematch" data-primary>Revancha</button>` : ""}
+        <button class="btn" data-action="restart-round" data-primary>Volver a apostar</button>
         <button class="btn ghost" data-action="leave">Volver al inicio</button>
       </div></div>`;
   }
@@ -454,12 +456,14 @@
         case "leave":
           if (state && state.status !== "finished" && !confirm("¿Salir de la mesa? Podrás volver con el código.")) return;
           return leave();
-        case "rematch": {
-          const d = await api("/api/games", {
+        case "restart-round": {
+          const d = await api(`/api/games/${session.code}/restart`, {
             method: "POST",
-            body: { mode: "local", names: state.players.map((p) => p.name), ante: state.ante, initial_chips: state.initial_chips },
+            body: { token: session.token },
           });
-          return enterGame(d.code, d.token);
+          state = d;
+          toast("Nueva ronda iniciada. ¡Vuelvan a apostar!");
+          return render();
         }
       }
     } catch (err) {

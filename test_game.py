@@ -41,9 +41,8 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(engine.next_seat(2, {0: 5, 1: 0, 2: 3}), 0)
 
     def test_fin_de_partida(self):
-        self.assertIsNone(engine.game_over_reason(0, {0: 5, 1: 5}))
-        self.assertIsNone(engine.game_over_reason(9, {0: 5, 1: 0}))
-        self.assertEqual(engine.game_over_reason(9, {0: 0, 1: 0}), "todos_sin_saldo")
+        self.assertEqual(engine.game_over_reason(0, {0: 5, 1: 5}), "pozo_vacio")
+        self.assertEqual(engine.game_over_reason(9, {0: 5, 1: 0}), "ultimo_jugador")
         self.assertIsNone(engine.game_over_reason(9, {0: 5, 1: 1}))
         self.assertEqual(engine.pick_winner({0: 10, 1: 10, 2: 3}, last_actor=1), 1)
         self.assertEqual(engine.pick_winner({0: 10, 1: 12}, last_actor=0), 1)
@@ -152,17 +151,16 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(ctx.exception.status, 409)
 
     # -- fin de partida -------------------------------------------------
-    def test_pozo_vacio_no_termina_la_sala(self):
+    def test_pozo_vacio_termina_la_ronda(self):
         g = self.local_game(names=("Ana", "Beto"), ante=5, chips=50)   # pozo 10
         with self.dice(2, 6):
             self.svc.roll(g["code"], None, None)
             s = self.svc.bet(g["code"], None, 10, None)["state"]        # se lleva todo
         self.assertEqual(s["pot"], 0)
-        self.assertEqual(s["status"], "playing")
-        self.assertIsNone(s["finish_reason"])
-        self.assertIsNone(s["winner_seat"])
+        self.assertEqual(s["status"], "finished")
+        self.assertEqual(s["finish_reason"], "pozo_vacio")
+        self.assertEqual(s["winner_seat"], 0)
         self.assertEqual(s["players"][0]["chips"], 55)
-        self.assertEqual(s["current_seat"], 1)
 
     def test_jugador_sin_fichas_queda_eliminado(self):
         g = self.local_game(names=("Ana", "Beto", "Cami"), ante=5, chips=6)  # 1 ficha c/u, pozo 15
@@ -172,10 +170,9 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual((s["status"], s["current_seat"]), ("playing", 1))
         with self.dice(1):
             s = self.svc.roll(g["code"], None, None)["state"]    # Beto también: solo queda Cami
-        self.assertEqual(s["status"], "playing")
-        self.assertIsNone(s["finish_reason"])
-        self.assertIsNone(s["winner_seat"])
-        self.assertEqual(s["current_seat"], 2)
+        self.assertEqual(s["status"], "finished")
+        self.assertEqual(s["finish_reason"], "ultimo_jugador")
+        self.assertEqual(s["winner_seat"], 2)
 
     def test_jugador_sin_saldo_puede_recargar_sin_reiniciar(self):
         g = self.local_game(names=("Ana", "Beto"), ante=5, chips=6)

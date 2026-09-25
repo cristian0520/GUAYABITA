@@ -132,6 +132,11 @@ def recharge(code: str, body: RechargeBody):
     return service.recharge(code, body.token, body.seat, body.amount)
 
 
+@app.post("/api/games/{code}/restart")
+def restart_round(code: str, body: TokenBody):
+    return service.restart_round(code, body.token)
+
+
 # ---------------------------------------------------------------- frontend
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 

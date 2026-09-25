@@ -282,6 +282,31 @@ class GameService:
         )
         return self.state(game["code"], token)
 
+    def restart_round(self, code: str, token: str | None) -> dict:
+        """Inicia otra ronda en la misma sala después de terminar la partida."""
+        game = self._game(code)
+        players = self._players(game["code"])
+        if not any(token and p["token"] == token for p in players):
+            raise GameError("No tienes permiso para iniciar otra ronda.", 403)
+        if game["status"] != "finished":
+            raise GameError("La ronda todavía no ha terminado.", 409)
+        now = _now()
+        starting_chips = game["initial_chips"] - game["ante"]
+        statements = [
+            (
+                "UPDATE players SET chips=? WHERE game_code=?",
+                [starting_chips, game["code"]],
+            ),
+            (
+                "UPDATE games SET status='playing', pot=?, phase='first_roll', "
+                "first_roll=NULL, current_seat=0, winner_seat=NULL, finish_reason=NULL, "
+                "turn_no=turn_no+1, version=version+1, updated_at=? WHERE code=?",
+                [game["ante"] * len(players), now, game["code"]],
+            ),
+        ]
+        self._write(statements)
+        return self.state(game["code"], token)
+
     # ------------------------------------------------------------------
     # Acciones de juego
     # ------------------------------------------------------------------
@@ -391,9 +416,7 @@ class GameService:
         chips_by_seat = {p["seat"]: p["chips"] for p in players}
         chips_by_seat[player["seat"]] = new_chips
 
-        # Una mesa compartida no termina porque se vacíe el pozo o porque
-        # quede un solo jugador activo: los demás deben poder continuar.
-        reason = "todos_sin_saldo" if not any(chips_by_seat.values()) else None
+        reason = engine.game_over_reason(new_pot, chips_by_seat)
         if reason:
             status, phase = "finished", "done"
             winner = engine.pick_winner(chips_by_seat, player["seat"])
