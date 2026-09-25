@@ -146,6 +146,17 @@
     return `<div class="die-wrap ${value ? "" : "is-hidden"}"><div class="die-stage"><div class="die ${value ? "" : "blank"}" id="${id}" data-value="${value || 0}" role="img" aria-label="${label}">${faceValues.map(faceHTML).join("")}</div></div><div class="die-result"><span class="die-result-label">Resultado</span><strong>${value || "—"}</strong></div><span class="cap">${caption}</span></div>`;
   }
 
+  function potHTML(chips, bump) {
+    const count = clamp(Math.ceil(Number(chips || 0) / 2), 4, 32);
+    const tokens = Array.from({ length: count }, (_, i) => {
+      const x = ((i * 17) % 42) - 21;
+      const y = -((i % 8) * 3);
+      const r = ((i * 19) % 12) - 6;
+      return `<i class="pot-chip" style="--x:${x}px;--y:${y}px;--r:${r}deg"></i>`;
+    }).join("");
+    return `<div class="pot ${bump ? "bump" : ""}" role="img" aria-label="Pozo de ${cop(chips)}"><div class="pot-stack">${tokens}</div><span class="pot-value">${cop(chips)}</span><span class="pot-label">Pozo</span></div>`;
+  }
+
   function setDie(el, value) {
     el.dataset.value = value || 0;
     el.setAttribute("aria-label", value ? `Dado en ${value}` : "Dado sin lanzar");
@@ -432,7 +443,7 @@
             <ul class="seats" aria-label="Jugadores y fichas">${seats}</ul>
             <div class="felt"><div class="felt-inner">
               <div class="table-mark" aria-label="La Guayabita"><span class="table-mark-icon">✦ 🥤 🪙</span><strong>La Guayabita</strong><small>MESA DE DADOS</small></div>
-              <div class="coin ${bump ? "bump" : ""}" role="img" aria-label="Pozo de ${cop(s.pot)}"><span class="num">${cop(s.pot)}</span><span class="lbl">Pozo</span></div>
+              ${potHTML(s.pot, bump)}
               <div class="dice">${dieHTML("die-a", a, "Primer tiro")}${dieHTML("die-b", b, "Segundo tiro")}</div>
               <p class="banner" id="banner">${esc(banner)}</p>
             </div></div>
