@@ -146,6 +146,21 @@ class GameService:
             [code, HISTORY_LIMIT],
         )
 
+    def _chat(self, code: str) -> list[dict]:
+        return self.db.execute(
+            "SELECT player_name, message, created_at FROM chat_messages "
+            "WHERE game_code=? ORDER BY id DESC LIMIT 40", [code]
+        )
+
+    def list_lobbies(self) -> list[dict]:
+        rows = self.db.execute(
+            "SELECT g.code, g.ante, g.initial_chips, g.created_at, COUNT(p.seat) AS players "
+            "FROM games g LEFT JOIN players p ON p.game_code=g.code "
+            "WHERE g.mode='online' AND g.status='lobby' "
+            "GROUP BY g.code ORDER BY g.created_at DESC LIMIT 100"
+        )
+        return rows
+
     def _new_code(self) -> str:
         for _ in range(20):
             code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(5))
@@ -204,7 +219,39 @@ class GameService:
             "can_act": can_act,
             "max_bet": limit,
             "moves": self._moves(game["code"]),
+            "chat": self._chat(game["code"]),
         }
+
+    def send_chat(self, code: str, token: str | None, message: str) -> dict:
+        game = self._game(code)
+        player = next((p for p in self._players(game["code"]) if token and p["token"] == token), None)
+        if not player:
+            raise GameError("No tienes permiso para escribir en esta sala.", 403)
+        clean = " ".join((message or "").split())
+        if not clean:
+            raise GameError("Escribe un mensaje.")
+        if len(clean) > 180:
+            raise GameError("El mensaje no puede superar 180 caracteres.")
+        self.db.execute(
+            "INSERT INTO chat_messages (game_code,player_name,message,created_at) VALUES (?,?,?,?)",
+            [game["code"], player["name"], clean, _now()],
+        )
+        return self.state(game["code"], token)
+
+    def change_seat(self, code: str, token: str | None, seat: int) -> dict:
+        game = self._game(code)
+        if game["status"] != "lobby":
+            raise GameError("Solo puedes cambiar de silla antes de iniciar la partida.", 409)
+        players = self._players(game["code"])
+        player = next((p for p in players if token and p["token"] == token), None)
+        if not player:
+            raise GameError("No tienes permiso para cambiar de silla.", 403)
+        if seat < 0 or seat >= MAX_PLAYERS:
+            raise GameError("Ese asiento no existe.")
+        if any(p["seat"] == seat for p in players):
+            raise GameError("Ese asiento ya está ocupado.")
+        self.db.execute("UPDATE players SET seat=? WHERE game_code=? AND seat=?", [seat, game["code"], player["seat"]])
+        return self.state(game["code"], token)
 
     # ------------------------------------------------------------------
     # Crear / unirse / iniciar

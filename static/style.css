@@ -334,6 +334,18 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 /* ---------- Sala de espera ---------- */
 .lobby { max-width: 560px; }
 .lobby .bigcode { font-family: var(--display); font-size: clamp(2.4rem, 12vw, 4rem); letter-spacing: 0.14em; margin: 4px 0 12px; color: var(--rind); }
+.room-list { display: grid; gap: 8px; }
+.room-card { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; text-align: left; width: 100%; padding: 12px; color: var(--ivory); background: rgba(0,0,0,.22); border: 1px solid var(--line); border-radius: 12px; }
+.room-card strong { color: var(--rind); letter-spacing: .1em; }
+.room-card span, .room-card small { color: var(--muted); }
+.seat-picker { display: grid; gap: 8px; margin-bottom: 16px; }
+.seat-picker > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.chat { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 14px; }
+.chat h3 { margin: 0 0 8px; }
+.chat-list { max-height: 180px; overflow: auto; display: grid; gap: 6px; }
+.chat-list p { margin: 0; font-size: .88rem; }
+#chat-form { display: flex; gap: 6px; margin-top: 10px; }
+#chat-form input { min-width: 0; flex: 1; padding: 8px 10px; }
 .plist { list-style: none; margin: 14px 0 20px; padding: 0; display: grid; gap: 8px; }
 .plist li { background: rgba(0, 0, 0, 0.28); border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; }
 
@@ -346,6 +358,8 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 
 @media (max-width: 700px) {
   .auth-grid { grid-template-columns: 1fr; }
+  .room-card { grid-template-columns: 1fr 1fr; }
+  .room-card small { grid-column: 1 / -1; }
   .wrap { padding: 16px 10px 34px; }
   .topbar { align-items: flex-start; }
   .topbar .right { width: 100%; justify-content: flex-end; }

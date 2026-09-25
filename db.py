@@ -97,9 +97,19 @@ SCHEMA: list[str] = [
         created_at TEXT NOT NULL
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS chat_messages (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        game_code  TEXT NOT NULL REFERENCES games(code) ON DELETE CASCADE,
+        player_name TEXT NOT NULL,
+        message    TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )
+    """,
     "CREATE INDEX IF NOT EXISTS idx_players_game ON players(game_code)",
     "CREATE INDEX IF NOT EXISTS idx_moves_game ON moves(game_code, id)",
     "CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id)",
+    "CREATE INDEX IF NOT EXISTS idx_chat_game ON chat_messages(game_code, id)",
 ]
 
 

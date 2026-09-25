@@ -99,6 +99,16 @@ class AuthTokenBody(BaseModel):
     token: str | None = None
 
 
+class ChatBody(BaseModel):
+    token: str | None = None
+    message: str
+
+
+class SeatBody(BaseModel):
+    token: str | None = None
+    seat: int = Field(..., ge=0, le=7)
+
+
 # ---------------------------------------------------------------- rutas
 @app.get("/health")
 def health():
@@ -133,6 +143,11 @@ def create_game(body: CreateGameBody):
                                host_name=body.host_name, names=body.names)
 
 
+@app.get("/api/lobbies")
+def lobbies():
+    return {"rooms": service.list_lobbies()}
+
+
 @app.get("/api/games/{code}")
 def get_game(code: str, token: str | None = None):
     return service.state(code, token)
@@ -141,6 +156,16 @@ def get_game(code: str, token: str | None = None):
 @app.post("/api/games/{code}/join")
 def join_game(code: str, body: JoinBody):
     return service.join(code, body.name)
+
+
+@app.post("/api/games/{code}/chat")
+def chat(code: str, body: ChatBody):
+    return service.send_chat(code, body.token, body.message)
+
+
+@app.post("/api/games/{code}/seat")
+def seat(code: str, body: SeatBody):
+    return service.change_seat(code, body.token, body.seat)
 
 
 @app.post("/api/games/{code}/start")

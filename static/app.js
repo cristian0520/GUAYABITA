@@ -167,6 +167,9 @@
     lastPot = null;
     history.replaceState(null, "", "/");
     renderHome();
+  } else if (f.id === "chat-form") {
+    state = await api(`/api/games/${session.code}/chat`, { method: "POST", body: { token: session.token, message: f.elements.message.value } });
+    render();
   }
 
   async function refresh(force = false) {
@@ -214,6 +217,11 @@
                  <form id="auth-login"><h3>Entrar</h3><input name="username" minlength="3" maxlength="20" placeholder="Usuario" autocomplete="username" required><input name="password" type="password" minlength="8" placeholder="Contraseña" autocomplete="current-password" required><button class="btn" type="submit">Iniciar sesión</button></form>
                  <form id="auth-register"><h3>Crear usuario</h3><input name="username" minlength="3" maxlength="20" placeholder="Usuario" autocomplete="username" required><input name="display_name" maxlength="20" placeholder="Nombre visible"><input name="password" type="password" minlength="8" placeholder="Contraseña (8+ caracteres)" autocomplete="new-password" required><button class="btn" type="submit">Registrarme</button></form>
                </div>`}
+        </section>
+        <section class="panel lobby-browser">
+          <h2>Salas públicas</h2>
+          <p class="muted">Únete a una mesa abierta o crea una nueva para tus amigos.</p>
+          <div id="lobbies"><p class="empty">Cargando salas…</p></div>
         </section>
 
         <section class="panel">
@@ -278,6 +286,20 @@
           </ul>
         </details>
       </main>`;
+    loadLobbies();
+  }
+
+  async function loadLobbies() {
+    const target = $("#lobbies");
+    if (!target) return;
+    try {
+      const data = await api("/api/lobbies");
+      target.innerHTML = data.rooms.length
+        ? `<div class="room-list">${data.rooms.map((room) => `<button class="room-card" data-action="select-room" data-code="${esc(room.code)}"><strong>${esc(room.code)}</strong><span>${room.players}/8 jugadores</span><small>Pozo inicial ${cop(room.ante)}</small></button>`).join("")}</div>`
+        : `<p class="empty">No hay salas abiertas. ¡Crea la primera!</p>`;
+    } catch {
+      target.innerHTML = `<p class="empty">Las salas públicas no están disponibles ahora.</p>`;
+    }
   }
 
   // ------------------------------------------------------------------ pantalla: sala de espera
@@ -300,6 +322,7 @@
     const list = s.players
       .map((p) => `<li><span>${esc(p.name)}${s.you && s.you.seat === p.seat ? " (tú)" : ""}</span><span class="muted">${p.is_host ? "Anfitrión" : "Jugador"}</span></li>`)
       .join("");
+    const emptySeats = Array.from({ length: 8 }, (_, seat) => !s.players.some((p) => p.seat === seat) ? `<button class="btn ghost small" data-action="change-seat" data-seat="${seat}">Silla ${seat + 1}</button>` : "").join("");
     app.innerHTML = `
       ${topbar(false)}
       <section class="panel lobby">
@@ -308,6 +331,7 @@
         <div class="bigcode">${esc(s.code)}</div>
         <button class="btn ghost small" data-action="copy-link">Copiar enlace</button>
         <ul class="plist" aria-label="Jugadores en la mesa">${list}</ul>
+        ${s.you ? `<div class="seat-picker"><b>Cambiar de silla</b><div>${emptySeats || '<span class="muted">No hay sillas libres.</span>'}</div></div>` : ""}
         <p class="hint">Apuesta inicial de ${cop(s.ante)}. Cada jugador empieza con ${cop(s.initial_chips - s.ante)}.</p>
         ${isHost
           ? `<button class="btn big" data-action="start" data-primary ${s.players.length < 2 ? "disabled" : ""}>Empezar partida</button>
@@ -373,6 +397,7 @@
     const log = s.moves.length
       ? `<ol>${s.moves.map((m) => `<li>${esc(m.message)}<div class="meta">Turno ${m.turn_no}, pozo ${cop(m.pot_after)}</div></li>`).join("")}</ol>`
       : `<p class="empty">Aún no hay jugadas. Aquí quedará el registro de cada turno.</p>`;
+    const chat = `<div class="chat"><h3>Chat de la mesa</h3><div class="chat-list">${(s.chat || []).slice().reverse().map((m) => `<p><b>${esc(m.player_name)}</b> ${esc(m.message)}</p>`).join("") || '<p class="empty">Saluda a la mesa.</p>'}</div><form id="chat-form"><input name="message" maxlength="180" placeholder="Escribe un mensaje respetuoso…" required><button class="btn small" type="submit">Enviar</button></form></div>`;
 
     app.innerHTML = `
       ${topbar()}
@@ -390,7 +415,7 @@
           </div>
           <div class="table-controls">${finished ? finishedHTML(s) : controlsHTML(s, cur, mine, online, mePlayer)}</div>
         </section>
-        <aside class="log" aria-label="Historial de jugadas"><h3>Jugadas recientes</h3>${log}</aside>
+        <aside class="log" aria-label="Historial de jugadas"><h3>Jugadas recientes</h3>${log}${chat}</aside>
       </div>`;
   }
 
@@ -496,6 +521,16 @@
           document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === tab)));
           $("#form-online").hidden = tab !== "online";
           $("#form-local").hidden = tab !== "local";
+          break;
+        }
+        case "select-room":
+          $("#jn-code").value = el.dataset.code;
+          $("#jn-name").focus();
+          break;
+        case "change-seat": {
+          const next = await api(`/api/games/${session.code}/seat`, { method: "POST", body: { token: session.token, seat: Number(el.dataset.seat) } });
+          state = next;
+          render();
           break;
         }
         case "sound-toggle":
