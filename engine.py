@@ -13,8 +13,8 @@ Resumen de las reglas implementadas:
     menor) lo apostado pasa al pozo.
   * Apuesta máxima = lo que haya en el pozo o las fichas del jugador,
     lo que sea menor (el pozo debe poder pagar y el jugador debe poder pagar).
-  * La partida termina cuando el pozo queda vacío o solo queda un jugador
-    con fichas. Gana quien tenga más fichas.
+  * La sala continúa aunque el pozo quede vacío o solo quede un jugador
+    activo. Termina únicamente cuando todos se quedan sin fichas.
 """
 from __future__ import annotations
 
@@ -91,10 +91,8 @@ def next_seat(current: int, chips_by_seat: dict[int, int]) -> int:
 
 
 def game_over_reason(pot: int, chips_by_seat: dict[int, int]) -> str | None:
-    if pot <= 0:
-        return "pozo_vacio"
-    if sum(1 for c in chips_by_seat.values() if c > 0) <= 1:
-        return "ultimo_jugador"
+    if not any(chips_by_seat.values()):
+        return "todos_sin_saldo"
     return None
 
 

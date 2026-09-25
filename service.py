@@ -245,6 +245,43 @@ class GameService:
         )
         return self.state(game["code"], token)
 
+    def recharge(self, code: str, token: str | None, seat: int | None, amount: int) -> dict:
+        """Recarga fichas de un jugador sin reiniciar la mesa."""
+        if amount < 1:
+            raise GameError("La recarga debe ser mayor que cero.")
+        game = self._game(code)
+        players = self._players(game["code"])
+        requester = next((p for p in players if token and p["token"] == token), None)
+        if not requester:
+            raise GameError("No tienes permiso para recargar en esta mesa.", 403)
+
+        target_seat = requester["seat"] if game["mode"] == "online" else seat
+        if target_seat is None:
+            raise GameError("Selecciona el jugador que va a recargar.")
+        player = next((p for p in players if p["seat"] == target_seat), None)
+        if not player:
+            raise GameError("Ese jugador no existe en la mesa.", 404)
+        if game["mode"] == "online" and player["seat"] != requester["seat"]:
+            raise GameError("Solo puedes recargar tu propio saldo.", 403)
+        if player["chips"] > 0:
+            raise GameError("Solo puedes recargar cuando te quedas sin saldo.")
+
+        self._write(
+            [
+                (
+                    "UPDATE players SET chips=? WHERE game_code=? AND seat=?",
+                    [amount, game["code"], player["seat"]],
+                ),
+                (
+                    "UPDATE games SET status='playing', phase='first_roll', "
+                    "current_seat=?, winner_seat=NULL, finish_reason=NULL, "
+                    "version=version+1, updated_at=? WHERE code=? AND status='finished'",
+                    [target_seat, _now(), game["code"]],
+                ),
+            ]
+        )
+        return self.state(game["code"], token)
+
     # ------------------------------------------------------------------
     # Acciones de juego
     # ------------------------------------------------------------------
@@ -354,7 +391,9 @@ class GameService:
         chips_by_seat = {p["seat"]: p["chips"] for p in players}
         chips_by_seat[player["seat"]] = new_chips
 
-        reason = engine.game_over_reason(new_pot, chips_by_seat)
+        # Una mesa compartida no termina porque se vacíe el pozo o porque
+        # quede un solo jugador activo: los demás deben poder continuar.
+        reason = "todos_sin_saldo" if not any(chips_by_seat.values()) else None
         if reason:
             status, phase = "finished", "done"
             winner = engine.pick_winner(chips_by_seat, player["seat"])

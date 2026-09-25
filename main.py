@@ -84,6 +84,11 @@ class BetBody(ActionBody):
     amount: int = Field(0, ge=0)
 
 
+class RechargeBody(ActionBody):
+    seat: int | None = None
+    amount: int = Field(..., ge=1, le=1_000_000)
+
+
 # ---------------------------------------------------------------- rutas
 @app.get("/health")
 def health():
@@ -120,6 +125,11 @@ def roll(code: str, body: ActionBody):
 @app.post("/api/games/{code}/bet")
 def bet(code: str, body: BetBody):
     return service.bet(code, body.token, body.amount, body.version)
+
+
+@app.post("/api/games/{code}/recharge")
+def recharge(code: str, body: RechargeBody):
+    return service.recharge(code, body.token, body.seat, body.amount)
 
 
 # ---------------------------------------------------------------- frontend

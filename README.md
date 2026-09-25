@@ -74,7 +74,7 @@ Railway, Fly.io o cualquier hosting con Python sirven igual (incluye un `Procfil
 3. Puede apostar de 1 hasta el **máximo = lo menor entre el pozo y sus fichas**, o **pasar**.
 4. Segundo lanzamiento: debe salir un número **estrictamente mayor**. Si gana, se lleva lo apostado del pozo; si sale igual o menor, lo apostado va al pozo.
 5. Quien queda sin fichas queda eliminado y se le salta el turno.
-6. La partida termina cuando **el pozo queda vacío** o **solo queda un jugador con fichas**. Gana quien tenga más fichas (en empate, quien hizo la última jugada).
+6. La sala continúa aunque el pozo quede vacío o solo quede un jugador con fichas. Quien queda sin saldo puede recargar desde la misma mesa o salir; su turno se salta hasta que recargue. La partida solo termina cuando todos los jugadores quedan sin fichas.
 
 Los puntos 3, 5 y 6 no estaban en tu texto y son decisiones mías; cada variante regional los
 juega distinto. Se cambian en `engine.py` (`max_bet`, `game_over_reason`, `pick_winner`).

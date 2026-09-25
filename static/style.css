@@ -170,6 +170,8 @@ details.rules li { margin: 6px 0; max-width: 62ch; }
 .seat.out .n { text-decoration: line-through; }
 .seat .tu { font-size: 0.8rem; color: var(--muted); }
 .seat.winner { border-color: var(--rind); background: rgba(230, 210, 106, 0.16); }
+.seat .refill-seat { margin-left: auto; padding: 5px 9px; font-size: 0.75rem; }
+.out-notice { padding: 14px 18px; border: 1px solid rgba(255, 128, 107, 0.45); border-radius: 14px; background: rgba(217, 72, 85, 0.12); }
 
 .wallet-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;

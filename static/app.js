@@ -251,6 +251,7 @@
     const finished = s.status === "finished";
     const cur = s.players.find((p) => p.seat === s.current_seat) || null;
     const mine = online && s.you && cur && s.you.seat === cur.seat;
+    const mePlayer = s.you ? s.players.find((p) => p.seat === s.you.seat) : null;
     const last = s.moves[0] || null;
 
     // Reinicia la apuesta sugerida al cambiar de turno/fase
@@ -279,7 +280,10 @@
     const seats = s.players.map((p) => {
       const cls = ["seat", p.seat === s.current_seat && !finished ? "current" : "", p.out ? "out" : "", finished && p.seat === s.winner_seat ? "winner" : ""].join(" ");
       const you = online && s.you && s.you.seat === p.seat ? `<span class="tu">(tú)</span>` : "";
-      return `<li class="${cls}" ${p.seat === s.current_seat && !finished ? 'aria-current="true"' : ""}><span class="n">${esc(p.name)}</span>${you}<span class="c">${cop(p.chips)}</span></li>`;
+      const refill = p.out && !finished
+        ? `<button class="btn ghost small refill-seat" data-action="recharge-player" data-seat="${p.seat}">Recargar</button>`
+        : "";
+      return `<li class="${cls}" ${p.seat === s.current_seat && !finished ? 'aria-current="true"' : ""}><span class="n">${esc(p.name)}</span>${you}<span class="c">${cop(p.chips)}</span>${refill}</li>`;
     }).join("");
 
     const log = s.moves.length
@@ -291,20 +295,23 @@
       <div class="layout">
         <section class="panel game-panel">
           <ul class="seats" aria-label="Jugadores y fichas">${seats}</ul>
-          <div class="wallet-bar"><span><small>Tu billetera</small><strong>${cop(wallet / COP_PER_CHIP)}</strong></span><button class="btn ghost small" data-action="recharge">+ Recargar</button></div>
+          <div class="wallet-bar"><span><small>Dinero disponible para recargar</small><strong>${cop(wallet / COP_PER_CHIP)}</strong></span><span><small>Saldo en mesa</small><strong>${mePlayer ? cop(mePlayer.chips) : "—"}</strong></span><button class="btn ghost small" data-action="recharge">+ Recargar saldo</button></div>
           <div class="felt"><div class="felt-inner">
             <div class="coin ${bump ? "bump" : ""}" role="img" aria-label="Pozo de ${cop(s.pot)}"><span class="num">${cop(s.pot)}</span><span class="lbl">Pozo</span></div>
             <div class="dice">${dieHTML("die-a", a, "Primer tiro")}${dieHTML("die-b", b, "Segundo tiro")}</div>
             <p class="banner" id="banner">${esc(banner)}</p>
-            ${finished ? finishedHTML(s) : controlsHTML(s, cur, mine, online)}
+            ${finished ? finishedHTML(s) : controlsHTML(s, cur, mine, online, mePlayer)}
           </div></div>
         </section>
         <aside class="log" aria-label="Historial de jugadas"><h3>Jugadas recientes</h3>${log}</aside>
       </div>`;
   }
 
-  function controlsHTML(s, cur, mine, online) {
+  function controlsHTML(s, cur, mine, online, mePlayer) {
     if (!cur) return "";
+    if (mePlayer && mePlayer.out && online) {
+      return `<div class="controls out-notice"><p class="turnline">Te quedaste sin saldo en la mesa.</p><p class="hint">Puedes recargar para volver a jugar o salir. Los demás jugadores continúan.</p><button class="btn big" data-action="recharge" data-primary>Recargar saldo</button></div>`;
+    }
     const who = online ? (mine ? "Es tu turno" : `Turno de <b>${esc(cur.name)}</b>`) : `Turno de <b>${esc(cur.name)}</b>`;
     if (!s.can_act) return `<div class="controls"><p class="turnline">${who}</p><p class="hint">Esperando a que ${esc(cur.name)} juegue…</p></div>`;
 
@@ -314,6 +321,9 @@
         <p class="hint">1 pone una ficha, 6 saca una, y del 2 al 5 puedes apostar.</p></div>`;
     }
     const max = s.max_bet;
+    if (max <= 0) {
+      return `<div class="controls"><p class="turnline">${who}</p><p class="hint">El pozo está vacío. Puedes pasar; la mesa sigue activa.</p><button class="btn big" data-action="pass" data-primary>Pasar turno</button></div>`;
+    }
     return `<div class="controls"><p class="turnline">${who}</p>
       <div class="betbox">
         <div class="stepper">
@@ -336,7 +346,7 @@
 
   function finishedHTML(s) {
     const w = s.players.find((p) => p.seat === s.winner_seat);
-    const why = s.finish_reason === "pozo_vacio" ? "El pozo quedó vacío." : "Solo quedó un jugador con fichas.";
+    const why = s.finish_reason === "todos_sin_saldo" ? "Todos los jugadores se quedaron sin saldo." : "La mesa terminó.";
     return `<div class="winnerbox">
       <p class="big">Ganó ${esc(w ? w.name : "nadie")}</p>
       <p class="muted" style="margin:0">${why} Termina con ${w ? cop(w.chips) : cop(0)}.</p>
@@ -422,12 +432,23 @@
           try { await navigator.clipboard.writeText(link); toast("Enlace copiado."); } catch { window.prompt("Copia este enlace:", link); }
           break;
         }
-        case "recharge": {
-          const amount = Number(window.prompt("¿Cuánto deseas recargar?", "50000"));
-          if (!Number.isFinite(amount) || amount < 1000) return toast("La recarga mínima es de $1.000 COP.");
-          wallet += Math.floor(amount / 1000) * 1000;
+        case "recharge":
+        case "recharge-player": {
+          const target = action === "recharge-player" ? Number(el.dataset.seat) : (state.you ? state.you.seat : null);
+          const player = state.players.find((p) => p.seat === target);
+          if (!player || !player.out) return toast("La recarga solo está disponible cuando el jugador se queda sin saldo.");
+          const amount = Number(window.prompt("¿Cuánto deseas recargar en COP?", "50000"));
+          const copAmount = Math.floor(amount / COP_PER_CHIP) * COP_PER_CHIP;
+          if (!Number.isFinite(amount) || copAmount < COP_PER_CHIP) return toast("La recarga mínima es de $1.000 COP.");
+          if (wallet < copAmount) return toast("No tienes suficiente dinero disponible para esa recarga.");
+          const recharged = await api(`/api/games/${session.code}/recharge`, {
+            method: "POST",
+            body: { token: session.token, seat: target, amount: copAmount / COP_PER_CHIP },
+          });
+          wallet -= copAmount;
           localStorage.setItem("guayabita.wallet", String(wallet));
-          toast(`Billetera recargada con ${cop(Math.floor(amount / 1000))}.`);
+          state = recharged;
+          toast(`${player.name} recibió ${cop(copAmount / COP_PER_CHIP)} y puede continuar jugando.`);
           return render();
         }
         case "leave":
