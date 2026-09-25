@@ -79,6 +79,7 @@ Railway, Fly.io o cualquier hosting con Python sirven igual (incluye un `Procfil
 4. Segundo lanzamiento: debe salir un número **estrictamente mayor**. Si gana, se lleva lo apostado del pozo; si sale igual o menor, lo apostado va al pozo.
 5. Quien queda sin fichas queda eliminado y se le salta el turno.
 6. La ronda termina cuando el pozo queda vacío o solo queda un jugador con fichas. El ganador puede pulsar **Volver a apostar** para iniciar otra ronda en la misma sala, conservando el código y los jugadores.
+7. Cada turno dura **15 segundos**. Si el jugador no lanza, apuesta o pasa antes de que termine el plazo, el servidor registra que perdió el turno y pasa automáticamente al siguiente jugador con fichas.
 
 Los puntos 3, 5 y 6 no estaban en tu texto y son decisiones mías; cada variante regional los
 juega distinto. Se cambian en `engine.py` (`max_bet`, `game_over_reason`, `pick_winner`).

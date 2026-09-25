@@ -38,7 +38,8 @@
   let audioContext = null;
   let turnDeadline = 0;
   let turnClock = null;
-  const TURN_SECONDS = 30;
+  const TURN_SECONDS = 15;
+  let turnExpiryRequested = false;
 
   function audio() {
     if (!soundEnabled) return null;
@@ -66,9 +67,28 @@
   }
 
   function diceSound() {
-    tone(150, 0.08, "triangle", 0.035);
-    tone(220, 0.08, "triangle", 0.03, 0.09);
-    tone(310, 0.12, "triangle", 0.025, 0.18);
+    const ctx = audio();
+    if (!ctx) return;
+    const sampleRate = ctx.sampleRate;
+    const noise = ctx.createBuffer(1, sampleRate * 0.12, sampleRate);
+    const data = noise.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    [0, 0.1, 0.2, 0.3, 0.4].forEach((delay, index) => {
+      const source = ctx.createBufferSource();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+      const start = ctx.currentTime + delay;
+      source.buffer = noise;
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(900 + index * 260, start);
+      filter.Q.value = 1.2;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.18, start + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.1);
+      source.connect(filter).connect(gain).connect(ctx.destination);
+      source.start(start);
+      source.stop(start + 0.12);
+    });
   }
 
   function landingSound() {
@@ -356,7 +376,8 @@
     if (key !== betKey) {
       betKey = key;
       betAmount = clamp(Math.min(s.ante, s.max_bet), 1, Math.max(1, s.max_bet));
-      turnDeadline = Date.now() + TURN_SECONDS * 1000;
+      turnExpiryRequested = false;
+      turnDeadline = s.turn_deadline ? s.turn_deadline * 1000 : Date.now() + TURN_SECONDS * 1000;
     }
     startTurnClock();
 
@@ -424,13 +445,13 @@
 
   function controlsHTML(s, cur, mine, online, mePlayer) {
     if (!cur) return "";
+    const timer = `<div class="turn-timer" role="timer"><span>⏱️ Tiempo de turno</span><strong id="turn-countdown">${remainingTurnSeconds()}s</strong></div>`;
     if (mePlayer && mePlayer.out && online) {
       return `<div class="controls out-notice"><p class="turnline">Te quedaste sin saldo en la mesa.</p><p class="hint">Puedes recargar para volver a jugar o salir. Los demás jugadores continúan.</p><button class="btn big" data-action="recharge" data-primary>Recargar saldo</button></div>`;
     }
     const who = online ? (mine ? "Es tu turno" : `Turno de <b>${esc(cur.name)}</b>`) : `Turno de <b>${esc(cur.name)}</b>`;
-    if (!s.can_act) return `<div class="controls"><p class="turnline">${who}</p><p class="hint">Esperando a que ${esc(cur.name)} juegue…</p></div>`;
+    if (!s.can_act) return `<div class="controls"><p class="turnline">${who}</p>${timer}<p class="hint">Esperando a que ${esc(cur.name)} juegue…</p></div>`;
 
-    const timer = `<div class="turn-timer" role="timer"><span>⏱️ Tiempo de turno</span><strong id="turn-countdown">${remainingTurnSeconds()}s</strong></div>`;
     if (s.phase === "first_roll") {
       return `<div class="controls"><p class="turnline">${who}</p>
         ${timer}
@@ -473,6 +494,10 @@
       const seconds = remainingTurnSeconds();
       el.textContent = `${seconds}s`;
       el.classList.toggle("urgent", seconds <= 8);
+      if (seconds === 0 && !turnExpiryRequested && session && !busy) {
+        turnExpiryRequested = true;
+        refresh(true).catch(() => {});
+      }
     }, 250);
   }
 

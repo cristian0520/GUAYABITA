@@ -43,6 +43,7 @@ SCHEMA: list[str] = [
         winner_seat   INTEGER,
         finish_reason TEXT,
         turn_no       INTEGER NOT NULL DEFAULT 0,
+        turn_deadline REAL,
         version       INTEGER NOT NULL DEFAULT 0,
         created_at    TEXT NOT NULL,
         updated_at    TEXT NOT NULL
@@ -263,3 +264,8 @@ class Database:
     def init_schema(self) -> None:
         for stmt in SCHEMA:
             self._b.execute(stmt, ())
+        try:
+            self._b.execute("ALTER TABLE games ADD COLUMN turn_deadline REAL", ())
+        except DBError as exc:
+            if "duplicate column" not in str(exc).lower() and "already exists" not in str(exc).lower():
+                raise

@@ -5,6 +5,7 @@ No depende de FastAPI, así que se puede probar por separado.
 from __future__ import annotations
 
 import secrets
+import time
 import base64
 import hashlib
 import hmac
@@ -19,6 +20,7 @@ from db import Database, DBError
 MAX_PLAYERS = 8
 MIN_PLAYERS = 2
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # sin 0/O/1/I para evitar confusiones
+TURN_SECONDS = 15  # sin 0/O/1/I para evitar confusiones
 HISTORY_LIMIT = 40
 
 
@@ -173,6 +175,8 @@ class GameService:
     # ------------------------------------------------------------------
     def state(self, code: str, token: str | None = None) -> dict:
         game = self._game(code)
+        if self._expire_turn_if_needed(game):
+            game = self._game(code)
         players = self._players(game["code"])
         me = next((p for p in players if token and p["token"] == token), None)
         playing = game["status"] == "playing"
@@ -200,6 +204,7 @@ class GameService:
             "winner_seat": game["winner_seat"],
             "finish_reason": game["finish_reason"],
             "turn_no": game["turn_no"],
+            "turn_deadline": game["turn_deadline"],
             "version": game["version"],
             "players": [
                 {
@@ -373,8 +378,9 @@ class GameService:
             [
                 (
                     "UPDATE games SET status='playing', pot=?, current_seat=?, phase='first_roll', "
-                    "version=version+1, updated_at=? WHERE code=?",
-                    [game["ante"] * len(players), players[0]["seat"], _now(), game["code"]],
+                    "turn_deadline=?, version=version+1, updated_at=? WHERE code=?",
+                    [game["ante"] * len(players), players[0]["seat"], time.time() + TURN_SECONDS,
+                     _now(), game["code"]],
                 )
             ]
         )
@@ -409,9 +415,9 @@ class GameService:
                 ),
                 (
                     "UPDATE games SET status='playing', phase='first_roll', "
-                    "current_seat=?, winner_seat=NULL, finish_reason=NULL, "
+                    "current_seat=?, winner_seat=NULL, finish_reason=NULL, turn_deadline=?, "
                     "version=version+1, updated_at=? WHERE code=? AND status='finished'",
-                    [target_seat, _now(), game["code"]],
+                    [target_seat, time.time() + TURN_SECONDS, _now(), game["code"]],
                 ),
             ]
         )
@@ -435,8 +441,8 @@ class GameService:
             (
                 "UPDATE games SET status='playing', pot=?, phase='first_roll', "
                 "first_roll=NULL, current_seat=0, winner_seat=NULL, finish_reason=NULL, "
-                "turn_no=turn_no+1, version=version+1, updated_at=? WHERE code=?",
-                [game["ante"] * len(players), now, game["code"]],
+                "turn_deadline=?, turn_no=turn_no+1, version=version+1, updated_at=? WHERE code=?",
+                [game["ante"] * len(players), time.time() + TURN_SECONDS, now, game["code"]],
             ),
         ]
         self._write(statements)
@@ -458,9 +464,32 @@ class GameService:
             raise GameError("No es tu turno.", 403)
         return player
 
+    def _expire_turn_if_needed(self, game: dict) -> bool:
+        if game["status"] != "playing" or not game["turn_deadline"] or game["turn_deadline"] > time.time():
+            return False
+        players = self._players(game["code"])
+        player = next((p for p in players if p["seat"] == game["current_seat"]), None)
+        if not player:
+            return False
+        if game["phase"] == "first_roll":
+            msg = f"{player['name']} agotó sus 15 segundos y pierde el turno sin lanzar."
+            first, second, bet = None, None, 0
+        elif game["phase"] == "bet":
+            msg = f"{player['name']} agotó sus 15 segundos y pasa sin completar la apuesta."
+            first, second, bet = game["first_roll"], None, 0
+        else:
+            return False
+        self._write(self._turn_statements(
+            game, players, player, game["pot"], player["chips"],
+            kind="timeout", first=first, second=second, bet=bet, msg=msg
+        ))
+        return True
+
     def roll(self, code: str, token: str | None, version: int | None) -> dict:
         """Primer lanzamiento del turno."""
         game = self._game(code)
+        if self._expire_turn_if_needed(game):
+            raise GameError("Se agotó el tiempo: el turno pasó al siguiente jugador.", 409)
         players = self._players(game["code"])
         player = self._check_turn(game, players, token, version, "first_roll")
 
@@ -503,6 +532,8 @@ class GameService:
     def bet(self, code: str, token: str | None, amount: int, version: int | None) -> dict:
         """Apuesta (o pasa con 0) y segundo lanzamiento."""
         game = self._game(code)
+        if self._expire_turn_if_needed(game):
+            raise GameError("Se agotó el tiempo: el turno pasó al siguiente jugador.", 409)
         players = self._players(game["code"])
         player = self._check_turn(game, players, token, version, "bet")
 
@@ -556,9 +587,11 @@ class GameService:
             status, phase = "finished", "done"
             winner = engine.pick_winner(chips_by_seat, player["seat"])
             next_seat = game["current_seat"]
+            deadline = None
         else:
             status, phase, winner = "playing", "first_roll", None
             next_seat = engine.next_seat(player["seat"], chips_by_seat)
+            deadline = time.time() + TURN_SECONDS
 
         return [
             ("UPDATE players SET chips=? WHERE game_code=? AND seat=?",
@@ -569,9 +602,10 @@ class GameService:
              [game["code"], game["turn_no"] + 1, player["seat"], player["name"], kind, first,
               second, bet, new_pot, new_chips, msg, now]),
             ("UPDATE games SET pot=?, status=?, phase=?, first_roll=NULL, current_seat=?, "
-             "winner_seat=?, finish_reason=?, turn_no=turn_no+1, version=version+1, updated_at=? "
+             "winner_seat=?, finish_reason=?, turn_deadline=?, turn_no=turn_no+1, "
+             "version=version+1, updated_at=? "
              "WHERE code=?",
-             [new_pot, status, phase, next_seat, winner, reason, now, game["code"]]),
+             [new_pot, status, phase, next_seat, winner, reason, deadline, now, game["code"]]),
         ]
 
     def _write(self, stmts: list[tuple[str, list[Any]]], conflict_msg: str | None = None) -> None:
