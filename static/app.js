@@ -42,7 +42,7 @@
     const AudioCtor = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtor) return null;
     if (!audioContext) audioContext = new AudioCtor();
-    if (audioContext.state === "suspended") audioContext.resume();
+    if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
     return audioContext;
   }
 
@@ -74,8 +74,8 @@
   }
 
   function chipsSound() {
-    tone(660, 0.07, "sine", 0.035);
-    tone(880, 0.11, "sine", 0.025, 0.08);
+    tone(660, 0.07, "sine", 0.12);
+    tone(880, 0.11, "sine", 0.09, 0.08);
   }
 
   function toast(msg) {
@@ -394,7 +394,7 @@
     const log = s.moves.length
       ? `<ol>${s.moves.map((m) => `<li>${esc(m.message)}<div class="meta">Turno ${m.turn_no}, pozo ${cop(m.pot_after)}</div></li>`).join("")}</ol>`
       : `<p class="empty">Aún no hay jugadas. Aquí quedará el registro de cada turno.</p>`;
-    const chat = `<div class="chat"><h3>Chat de la mesa</h3><div class="chat-list">${(s.chat || []).slice().reverse().map((m) => `<p><b>${esc(m.player_name)}</b> ${esc(m.message)}</p>`).join("") || '<p class="empty">Saluda a la mesa.</p>'}</div><form id="chat-form"><input name="message" maxlength="180" placeholder="Escribe un mensaje respetuoso…" required><button class="btn small" type="submit">Enviar</button></form></div>`;
+    const chat = `<div class="chat"><h3>Chat de la mesa</h3><div class="chat-list">${(s.chat || []).slice().reverse().map((m) => `<div class="chat-bubble"><b>${esc(m.player_name)}</b><span>${esc(m.message)}</span></div>`).join("") || '<p class="empty">Saluda a la mesa.</p>'}</div><form id="chat-form"><input name="message" maxlength="180" placeholder="Escribe un mensaje respetuoso…" required><button class="btn small" type="submit">Enviar</button></form></div>`;
 
     app.innerHTML = `
       ${topbar()}
@@ -533,7 +533,11 @@
         case "sound-toggle":
           soundEnabled = !soundEnabled;
           localStorage.setItem("guayabita.sound", soundEnabled ? "on" : "off");
-          if (soundEnabled) { tone(660, 0.08); tone(880, 0.12, "sine", 0.03, 0.08); }
+          if (soundEnabled) {
+            tone(520, 0.12, "sine", 0.16);
+            tone(780, 0.16, "sine", 0.12, 0.12);
+            toast("Sonido activado. Prueba Lanzar el dado.");
+          }
           render();
           break;
         case "auth-logout":
