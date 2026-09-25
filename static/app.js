@@ -71,13 +71,13 @@
   function dieHTML(id, value, caption) {
     const label = value ? `Dado en ${value}` : "Dado sin lanzar";
     const faceValues = [value || 1, 6, 2, 5, 3, 4];
-    return `<div class="die-wrap ${value ? "" : "is-hidden"}"><div class="die-stage"><div class="die ${value ? "" : "blank"}" id="${id}" data-value="${value || 0}" role="img" aria-label="${label}">${faceValues.map(faceHTML).join("")}</div></div><strong class="die-result">${value || "—"}</strong><span class="cap">${caption}</span></div>`;
+    return `<div class="die-wrap ${value ? "" : "is-hidden"}"><div class="die-stage"><div class="die ${value ? "" : "blank"}" id="${id}" data-value="${value || 0}" role="img" aria-label="${label}">${faceValues.map(faceHTML).join("")}</div></div><div class="die-result"><span class="die-result-label">Resultado</span><strong>${value || "—"}</strong></div><span class="cap">${caption}</span></div>`;
   }
 
   function setDie(el, value) {
     el.dataset.value = value || 0;
     el.setAttribute("aria-label", value ? `Dado en ${value}` : "Dado sin lanzar");
-    const result = el.closest(".die-wrap")?.querySelector(".die-result");
+    const result = el.closest(".die-wrap")?.querySelector(".die-result strong");
     if (result) result.textContent = value || "—";
     [...el.children].forEach((face, faceIndex) => {
       const pips = PIPS[((value + faceIndex - 1) % 6) + 1] || [];
@@ -279,8 +279,8 @@
     let banner = "";
     if (s.phase === "bet" && cur) {
       const need = a >= 5 ? "6" : `${a + 1} o más`;
-      banner = mine ? `Sacaste ${a}. Para ganar necesitas ${need}.` : `${cur.name} sacó ${a}. Para ganar necesita ${need}.`;
-    } else if (last) banner = last.message;
+      banner = mine ? `🎲 Cayó ${a}. Ahora elige tu apuesta y vuelve a lanzar.` : `🎲 A ${cur.name} le cayó ${a}. Está eligiendo la apuesta.`;
+    } else if (last) banner = `🎲 ${last.message} ${s.status === "playing" ? "Sigue el próximo turno." : ""}`;
     else if (cur) banner = `Empieza la partida. El primer turno es de ${cur.name}.`;
 
     const bump = lastPot !== null && lastPot !== s.pot;
@@ -300,8 +300,9 @@
         ? `<button class="btn ghost small refill-seat" data-action="recharge-player" data-seat="${p.seat}">Recargar</button>`
         : "";
       const turnIcon = p.seat === s.current_seat && !finished ? '<span class="turn-die" title="Turno actual">🎲</span>' : "";
+      const props = `<span class="seat-props" aria-label="Fichas y vaso">🪙 🥤</span>`;
       return `<li class="${cls}" ${p.seat === s.current_seat && !finished ? 'aria-current="true"' : ""}>
-        <span class="avatar">${avatars[seat]}</span><span class="seat-copy"><span class="n">${esc(p.name)} ${you}</span><span class="seat-status">${p.out ? "Sin saldo" : `${cop(p.chips)} 🪙`}</span></span>${turnIcon}${refill}
+        <span class="avatar">${avatars[seat]}</span><span class="seat-copy"><span class="n">${esc(p.name)} ${you}</span><span class="seat-status">${p.out ? "Sin saldo" : cop(p.chips)}</span></span>${props}${turnIcon}${refill}
       </li>`;
     }).join("");
 
@@ -317,7 +318,7 @@
           <div class="poker-table">
             <ul class="seats" aria-label="Jugadores y fichas">${seats}</ul>
             <div class="felt"><div class="felt-inner">
-              <div class="table-mark" aria-label="La Guayabita"><span class="table-mark-icon">✦</span><strong>La Guayabita</strong><small>MESA DE DADOS</small></div>
+              <div class="table-mark" aria-label="La Guayabita"><span class="table-mark-icon">✦ 🥤 🪙</span><strong>La Guayabita</strong><small>MESA DE DADOS</small></div>
               <div class="coin ${bump ? "bump" : ""}" role="img" aria-label="Pozo de ${cop(s.pot)}"><span class="num">${cop(s.pot)}</span><span class="lbl">Pozo</span></div>
               <div class="dice">${dieHTML("die-a", a, "Primer tiro")}${dieHTML("die-b", b, "Segundo tiro")}</div>
               <p class="banner" id="banner">${esc(banner)}</p>
