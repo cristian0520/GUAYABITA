@@ -99,6 +99,11 @@ class AuthTokenBody(BaseModel):
     token: str | None = None
 
 
+class ProfileBody(AuthTokenBody):
+    avatar: str
+    display_name: str = ""
+
+
 class ChatBody(BaseModel):
     token: str | None = None
     message: str
@@ -135,6 +140,11 @@ def logout(body: AuthTokenBody):
 @app.get("/api/auth/me")
 def me(token: str | None = None):
     return {"user": service.current_user(token)}
+
+
+@app.post("/api/auth/profile")
+def profile(body: ProfileBody):
+    return service.update_profile(body.token, body.avatar, body.display_name)
 
 
 @app.post("/api/games")

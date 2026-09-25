@@ -242,7 +242,8 @@
 
         <section class="panel auth-panel">
           ${auth
-            ? `<div class="profile-line"><span class="profile-avatar">${esc(auth.user.avatar)}</span><span><b>${esc(auth.user.display_name)}</b><small>@${esc(auth.user.username)} · ${esc(auth.user.badge)}</small></span><button class="btn ghost small" data-action="auth-logout">Cerrar sesión</button></div>`
+            ? `<div class="profile-line"><span class="profile-avatar">${esc(auth.user.avatar)}</span><span><b>${esc(auth.user.display_name)}</b><small>@${esc(auth.user.username)} · ${esc(auth.user.badge)}</small></span><button class="btn ghost small" data-action="edit-profile">Cambiar avatar</button><button class="btn ghost small" data-action="auth-logout">Cerrar sesión</button></div>
+               <form id="profile-form" class="profile-editor" hidden><label>Nombre visible<input name="display_name" maxlength="20" value="${esc(auth.user.display_name)}"></label><div class="avatar-picker" aria-label="Elegir avatar">${["🧑", "👩", "🧔", "👨", "👩‍🦱", "🧑‍🎤", "👨‍🦰", "👩‍🦳", "🐯", "🦊", "🐼", "🐸"].map((avatar) => `<button type="button" class="avatar-choice ${avatar === auth.user.avatar ? "selected" : ""}" data-action="select-avatar" data-avatar="${avatar}">${avatar}</button>`).join("")}</div><input type="hidden" name="avatar" value="${esc(auth.user.avatar)}"><button class="btn small" type="submit">Guardar perfil</button></form>`
             : `<h2>Tu cuenta</h2>
                <p class="muted">Crea tu perfil para conservar tu nombre y prepararte para logros y emblemas.</p>
                <div class="auth-grid">
@@ -424,15 +425,18 @@
         : "";
       const turnIcon = p.seat === s.current_seat && !finished ? '<span class="turn-die" title="Turno actual">🎲</span>' : "";
       const props = `<span class="seat-props" aria-label="Fichas y vaso">🪙 🥤</span>`;
+      const avatar = you && auth ? auth.user.avatar : avatars[seat];
       return `<li class="${cls}" ${p.seat === s.current_seat && !finished ? 'aria-current="true"' : ""}>
-        <span class="avatar">${avatars[seat]}</span><span class="seat-copy"><span class="n">${esc(p.name)} ${you}</span><span class="seat-status">${p.out ? "Sin saldo" : cop(p.chips)}</span></span>${props}${turnIcon}${refill}
+        <span class="avatar">${avatar}</span><span class="seat-copy"><span class="n">${esc(p.name)} ${you}</span><span class="seat-status">${p.out ? "Sin saldo" : cop(p.chips)}</span></span>${props}${turnIcon}${refill}
       </li>`;
     }).join("");
 
     const log = s.moves.length
       ? `<ol>${s.moves.map((m) => `<li>${esc(m.message)}<div class="meta">Turno ${m.turn_no}, pozo ${cop(m.pot_after)}</div></li>`).join("")}</ol>`
       : `<p class="empty">Aún no hay jugadas. Aquí quedará el registro de cada turno.</p>`;
-    const chat = `<div class="chat"><h3>Chat de la mesa</h3><div class="chat-list">${(s.chat || []).slice().reverse().map((m) => `<div class="chat-bubble"><b>${esc(m.player_name)}</b><span>${esc(m.message)}</span></div>`).join("") || '<p class="empty">Saluda a la mesa.</p>'}</div><form id="chat-form"><input name="message" maxlength="180" placeholder="Escribe un mensaje respetuoso…" required><button class="btn small" type="submit">Enviar</button></form></div>`;
+    const recentChat = (s.chat || []).slice(-3);
+    const speech = recentChat.map((m, i) => `<div class="table-bubble bubble-${i}"><b>${esc(m.player_name)}</b><span>${esc(m.message)}</span></div>`).join("");
+    const chat = `<div class="chat"><h3>💬 Comentarios de la mesa</h3><div class="chat-list">${(s.chat || []).slice().reverse().map((m) => `<div class="chat-bubble"><b>${esc(m.player_name)}</b><span>${esc(m.message)}</span></div>`).join("") || '<p class="empty">Saluda a la mesa.</p>'}</div><form id="chat-form"><input name="message" maxlength="180" placeholder="Escribe un comentario…" required><button class="btn small" type="submit">Enviar</button></form></div>`;
 
     app.innerHTML = `
       ${topbar()}
@@ -441,7 +445,7 @@
           <div class="wallet-bar"><span><small>Dinero disponible para recargar</small><strong>${cop(wallet / COP_PER_CHIP)}</strong></span><span><small>Saldo en mesa</small><strong>${mePlayer ? cop(mePlayer.chips) : "—"}</strong></span><button class="btn ghost small" data-action="recharge">+ Recargar saldo</button></div>
           <div class="poker-table">
             <ul class="seats" aria-label="Jugadores y fichas">${seats}</ul>
-            <div class="felt"><div class="felt-inner">
+            <div class="felt"><div class="felt-inner">${speech}
               <div class="table-mark" aria-label="La Guayabita"><span class="table-mark-icon">✦ 🥤 🪙</span><strong>La Guayabita</strong><small>MESA DE DADOS</small></div>
               ${potHTML(s.pot, bump)}
               <div class="dice">${dieHTML("die-a", a, "Primer tiro")}${dieHTML("die-b", b, "Segundo tiro")}</div>
@@ -608,6 +612,19 @@
             renderHome();
           }
           break;
+        case "edit-profile": {
+          const form = $("#profile-form");
+          if (form) form.hidden = !form.hidden;
+          break;
+        }
+        case "select-avatar": {
+          const form = $("#profile-form");
+          if (form) {
+            form.elements.avatar.value = el.dataset.avatar;
+            form.querySelectorAll(".avatar-choice").forEach((button) => button.classList.toggle("selected", button === el));
+          }
+          break;
+        }
         case "add-name": {
           const box = $("#names");
           if (box.children.length >= 8) return toast("Máximo 8 jugadores.");
@@ -735,6 +752,19 @@
           body: { token: session.token, message: f.elements.message.value },
         });
         render();
+      } else if (f.id === "profile-form") {
+        const result = await api("/api/auth/profile", {
+          method: "POST",
+          body: {
+            token: auth.token,
+            avatar: f.elements.avatar.value,
+            display_name: f.elements.display_name.value,
+          },
+        });
+        auth = { ...auth, user: result.user };
+        authStore.set(auth);
+        toast("Perfil actualizado.");
+        renderHome();
       }
     } catch (err) {
       toast(err.message);

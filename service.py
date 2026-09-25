@@ -120,6 +120,17 @@ class GameService:
     def current_user(self, token: str | None) -> dict:
         return self._public_user(self._auth_user(token))
 
+    def update_profile(self, token: str | None, avatar: str, display_name: str = "") -> dict:
+        user = self._auth_user(token)
+        allowed = {"🧑", "👩", "🧔", "👨", "👩‍🦱", "🧑‍🎤", "👨‍🦰", "👩‍🦳", "🐯", "🦊", "🐼", "🐸"}
+        if avatar not in allowed:
+            raise GameError("Ese avatar no está disponible.")
+        name = " ".join((display_name or user["display_name"]).split())[:20]
+        if not name:
+            raise GameError("El nombre visible no puede estar vacío.")
+        self.db.execute("UPDATE users SET avatar=?, display_name=? WHERE id=?", [avatar, name, user["id"]])
+        return {"user": self._public_user(self._auth_user(token))}
+
     def logout_user(self, token: str | None) -> None:
         if token:
             self.db.execute("DELETE FROM auth_sessions WHERE token=?", [token])
