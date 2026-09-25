@@ -167,9 +167,6 @@
     lastPot = null;
     history.replaceState(null, "", "/");
     renderHome();
-  } else if (f.id === "chat-form") {
-    state = await api(`/api/games/${session.code}/chat`, { method: "POST", body: { token: session.token, message: f.elements.message.value } });
-    render();
   }
 
   async function refresh(force = false) {
@@ -669,6 +666,12 @@
         authStore.set(auth);
         toast(f.id === "auth-login" ? "Sesión iniciada." : "Usuario creado correctamente.");
         renderHome();
+      } else if (f.id === "chat-form") {
+        state = await api(`/api/games/${session.code}/chat`, {
+          method: "POST",
+          body: { token: session.token, message: f.elements.message.value },
+        });
+        render();
       }
     } catch (err) {
       toast(err.message);
